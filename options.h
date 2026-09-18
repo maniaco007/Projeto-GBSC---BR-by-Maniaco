@@ -43,6 +43,11 @@ struct userOptions
     // extra luma gain applied while scanlines are on, to compensate for the
     // darker averaged brightness of the mixing-based scanline effect; 0 = off (old behavior)
     uint8_t scanlineBrightnessBoost;
+    // manual HTotal +/- fine-tune (from the Developer HTotal++/-- buttons),
+    // re-applied after loading a fixed/built-in preset, which otherwise has
+    // no way to remember it (custom preset slots already capture VDS_HSYNC_RST
+    // as part of their register dump, so this only matters for fixed presets)
+    int8_t htotalTrim;
 };
 
 

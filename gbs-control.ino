@@ -4106,6 +4106,16 @@ void doPostPresetLoadSteps()
     }
     // presetPreference = OutputCustomized may fail to load (missing) preset file and arrive here with defaults
     SerialM.println("\n");
+
+    // Custom preset slots already capture VDS_HSYNC_RST in their register
+    // dump. Fixed/built-in presets can't, so re-apply the user's manual
+    // HTotal trim (from the Developer HTotal++/-- buttons) on top.
+    if (!rto->isCustomPreset && uopt->htotalTrim != 0) {
+        int32_t target = (int32_t)GBS::VDS_HSYNC_RST::read() + uopt->htotalTrim;
+        if (target >= 0 && target <= 4095) {
+            applyBestHTotal((uint16_t)target);
+        }
+    }
 }
 
 // TODO replace result with VideoStandardInput enum
@@ -7183,6 +7193,7 @@ void loadDefaultUserOptions()
     uopt->inputSourceLock = 0;               // #20, 0 = auto detect
     uopt->screenOffTimeoutMinutes = 0;       // #21, 0 = disabled
     uopt->scanlineBrightnessBoost = 0;       // #22, 0 = off (old behavior)
+    uopt->htotalTrim = 0;                    // #23, 0 = no trim
 }
 
 #if !ENABLE_WIFI
@@ -7505,6 +7516,14 @@ void setup()
 
             int boostRead = f.read(); // #22, raw byte, 255 == unset/old file
             uopt->scanlineBrightnessBoost = (boostRead < 0 || boostRead == 255 || boostRead > 0x40) ? 0 : (uint8_t)boostRead;
+
+            int trimRead = f.read(); // #23, raw byte offset by 128 (signed -30..30), -1 == unset/old file
+            if (trimRead < 0) {
+                uopt->htotalTrim = 0;
+            } else {
+                int16_t trim = (int16_t)trimRead - 128;
+                uopt->htotalTrim = (trim < -30 || trim > 30) ? 0 : (int8_t)trim;
+            }
 
             f.close();
         }
@@ -8211,6 +8230,13 @@ void loop()
                     }
                     rto->forceRetime = 1;
                     applyBestHTotal(GBS::VDS_HSYNC_RST::read() + 1);
+                    // Fixed/built-in presets can't store this in their register
+                    // dump (they're compiled constants), so remember it as a
+                    // trim to re-apply after the next fixed preset load.
+                    if (uopt->htotalTrim < 30) {
+                        uopt->htotalTrim++;
+                        saveUserPrefs();
+                    }
                 }
                 break;
             case 'A':
@@ -8223,6 +8249,10 @@ void loop()
                     }
                     rto->forceRetime = 1;
                     applyBestHTotal(GBS::VDS_HSYNC_RST::read() - 1);
+                    if (uopt->htotalTrim > -30) {
+                        uopt->htotalTrim--;
+                        saveUserPrefs();
+                    }
                 }
                 break;
             case 'M': {
@@ -10523,6 +10553,7 @@ void saveUserPrefs()
     f.write(uopt->inputSourceLock + '0');               // #20
     f.write(uopt->screenOffTimeoutMinutes);             // #21, raw byte
     f.write(uopt->scanlineBrightnessBoost);             // #22, raw byte
+    f.write((uint8_t)(uopt->htotalTrim + 128));         // #23, signed, offset by 128
 
     f.close();
 }
