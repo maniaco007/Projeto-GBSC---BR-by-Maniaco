@@ -112,6 +112,9 @@ Essa migração também foi a origem de um bug corrigido nesta rodada: um arquiv
 - [x] Seleção de ícone por preset na webui (25 ícones, só GameCube tem arte real derivada de favicon)
 - [x] Menu OLED: aba Perfis funcionando, nome/ícone do preset ativo na tela principal, nomes longos rolando e alinhados à esquerda
 - [x] Infraestrutura de protetor de tela animado por preset (prova de conceito com GameCube)
+- [x] Indicador de limite de ganho ADC (número fica vermelho no limite ±40) e Perfil de Inicialização (força um slot específico ao ligar) — ideias do RetroTINK
+- [x] Link Perfil↔Entrada (preset lembra e força a entrada RGB/RGBS ou Componente usada) e aviso de mudança de formato no OLED por 3s — ideias do OSSC
+- [ ] **Ideia anotada, não implementada:** no card do preset, trocar o texto "Personalizado" por qual dos 4 conectores da GBSC (SCART/VGA/Componente/RGBS) foi usado — provavelmente precisa ser um rótulo manual escolhido ao salvar (igual o ícone), já que o TV5725 só distingue RGB-path vs Componente-path a nível de registrador, não o conector físico em si
 - [ ] **`feature-lab` ainda não foi consolidado em `ptbr-import`** — aguardando terminar de testar no aparelho real antes de mesclar
 - [ ] Faltam ícones/animações reais pros outros ~23 consoles (as imagens/gifs vão sendo trazidas aos poucos e cadastradas)
 - [ ] `custom_presets.h` (os 5 presets embarcados) ainda usa o esquema antigo de ids de ícone — precisa ser regerado quando o conjunto de ícones final estiver pronto
