@@ -17,6 +17,7 @@
 #endif
 #include "fonts.h"
 #include "OSDManager.h"
+#include "OLEDIconAnimations.h"
 
 typedef TV5725<GBS_ADDR> GBS;
 extern void applyPresets(uint8_t videoMode);
@@ -225,13 +226,30 @@ bool resetMenuHandler(OLEDMenuManager *manager, OLEDMenuItem *item, OLEDMenuNav,
     oledMenuFreezeTimeoutInMS = 2000; // freeze for 2 seconds
     return false;
 }
-// Looks up the name of the currently active custom preset slot (uopt->presetSlot)
-// straight from /slots.bin. Returns false (leaving outName untouched) when no
-// custom preset is active or the slot can't be found, so callers fall back to
-// the normal resolution text.
-static bool getActivePresetName(char *outName, size_t outSize)
+// Slot files (slots.bin, slot_icons.bin) are indexed 0..SLOTS_TOTAL-1, but
+// uopt->presetSlot stores the slot as its ASCII letter ('A' + index, see
+// presetSelectionMenuHandler/presetsCreationMenuHandler below). Returns -1
+// when no custom preset is active or the letter is out of range.
+static int getActivePresetSlotIndex()
 {
     if (uopt->presetPreference != PresetPreference::OutputCustomized) {
+        return -1;
+    }
+    int index = (int)uopt->presetSlot - 'A';
+    if (index < 0 || index >= SLOTS_TOTAL) {
+        return -1;
+    }
+    return index;
+}
+
+// Looks up the name of the currently active custom preset slot straight from
+// /slots.bin. Returns false (leaving outName untouched) when no custom
+// preset is active or the slot has no name, so callers fall back to the
+// normal resolution text.
+static bool getActivePresetName(char *outName, size_t outSize)
+{
+    int index = getActivePresetSlotIndex();
+    if (index < 0) {
         return false;
     }
     File f = LittleFS.open(SLOTS_FILE, "r");
@@ -241,18 +259,40 @@ static bool getActivePresetName(char *outName, size_t outSize)
     SlotMetaArray slotsObject;
     bool found = false;
     if (f.read((byte *)&slotsObject, sizeof(slotsObject)) == (int)sizeof(slotsObject)) {
-        for (int i = 0; i < SLOTS_TOTAL; ++i) {
-            const SlotMeta &slot = slotsObject.slot[i];
-            if (slot.slot == uopt->presetSlot && strlen(slot.name) && strcmp(EMPTY_SLOT_NAME, slot.name) != 0) {
-                strncpy(outName, slot.name, outSize - 1);
-                outName[outSize - 1] = 0;
-                found = true;
-                break;
-            }
+        const SlotMeta &slot = slotsObject.slot[index];
+        if (strlen(slot.name) && strcmp(EMPTY_SLOT_NAME, slot.name) != 0) {
+            strncpy(outName, slot.name, outSize - 1);
+            outName[outSize - 1] = 0;
+            found = true;
         }
     }
     f.close();
     return found;
+}
+
+// Looks up the console icon id (as chosen in the webui's icon picker,
+// stored 1 byte per slot in /slot_icons.bin) for the currently active
+// custom preset slot. Returns 0 (generic/no icon) when no custom preset is
+// active or the file/entry doesn't exist.
+static uint8_t getActivePresetIconId()
+{
+    int index = getActivePresetSlotIndex();
+    if (index < 0) {
+        return 0;
+    }
+    File f = LittleFS.open(SLOT_ICONS_FILE, "r");
+    if (!f) {
+        return 0;
+    }
+    uint8_t iconId = 0;
+    if (f.seek(index)) {
+        int b = f.read();
+        if (b >= 0) {
+            iconId = (uint8_t)b;
+        }
+    }
+    f.close();
+    return iconId;
 }
 
 // Simple vector gamepad glyph (capsule body with a D-pad and two face buttons
@@ -360,6 +400,28 @@ bool currentSettingHandler(OLEDMenuManager *manager, OLEDMenuItem *, OLEDMenuNav
 
     return false;
 }
+
+// Screensaver hook (see OLEDMenuManager::drawScreenSaver()): while a custom
+// preset with a known icon animation is active, cycles through that icon's
+// frames at a random position each redraw (same anti-burn-in behavior as
+// the default screensaver) instead of the generic bouncing text. Falls
+// back to the default (returns false) for fixed-resolution presets or
+// icons that don't have an animation yet.
+bool presetScreenSaverHandler(OLEDDisplay *display)
+{
+    const IconAnimation *anim = findIconAnimation(getActivePresetIconId());
+    if (!anim || !anim->frameCount) {
+        return false;
+    }
+    static uint8_t frame = 0;
+    frame = (frame + 1) % anim->frameCount;
+    int16_t maxX = OLED_MENU_WIDTH - anim->width;
+    int16_t maxY = OLED_MENU_HEIGHT - anim->height;
+    int16_t x = maxX > 0 ? rand() % maxX : 0;
+    int16_t y = maxY > 0 ? rand() % maxY : 0;
+    display->drawXbm(x, y, anim->width, anim->height, anim->frames[frame]);
+    return true;
+}
 #if ENABLE_WIFI
 bool wifiMenuHandler(OLEDMenuManager *manager, OLEDMenuItem *item, OLEDMenuNav, bool)
 {
@@ -459,6 +521,7 @@ bool osdMenuHanlder(OLEDMenuManager *manager, OLEDMenuItem *, OLEDMenuNav nav, b
 void initOLEDMenu()
 {
     OLEDMenuItem *root = oledMenu.rootItem;
+    oledMenu.screenSaverHandler = presetScreenSaverHandler;
 
     // OSD Menu
     oledMenu.registerItem(root, MT_NULL, IMAGE_ITEM(OM_OSD), osdMenuHanlder);

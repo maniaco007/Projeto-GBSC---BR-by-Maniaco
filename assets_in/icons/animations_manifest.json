@@ -1,0 +1,12 @@
+[
+  {
+    "iconId": 9,
+    "name": "gamecube",
+    "source": "assets_in/icons/gamecube_40.png",
+    "size": 32,
+    "threshold": 128,
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3,
+    "_comment": "prova de conceito: nao existe arte animada real ainda, entao gera um bounce simples a partir do icone estatico do GameCube ja usado na webui. Troque 'source' por um .gif com varios quadros (ou adicione mais entradas nesta lista para outros consoles) e rode make_icon_animation.py de novo quando tiver a arte definitiva."
+  }
+]

@@ -89,6 +89,14 @@ private:
     {
         display->clear();
         display->setColor(OLEDDISPLAY_COLOR::WHITE);
+        // Let app code (OLEDMenuImplementation.cpp) draw something custom
+        // (e.g. an animated icon tied to the active preset) instead of the
+        // default bouncing text. Returning false means "nothing drawn,
+        // use the default".
+        if (screenSaverHandler && screenSaverHandler(display)) {
+            display->display();
+            return;
+        }
         constexpr int16_t max_x = OLED_MENU_WIDTH - OM_SCREEN_SAVER_WIDTH;
         constexpr int16_t max_y = OLED_MENU_HEIGHT - OM_SCREEN_SAVER_HEIGHT;
         display->drawXbm(rand() % max_x, rand() % max_y, IMAGE_ITEM(OM_SCREEN_SAVER));
@@ -96,6 +104,12 @@ private:
     }
 
 public:
+    // Optional hook: if set, called on every screensaver redraw before
+    // falling back to the default bouncing-text screensaver. Return true
+    // if it drew something (skips the default for this redraw).
+    typedef bool (*ScreenSaverHandler)(OLEDDisplay *display);
+    ScreenSaverHandler screenSaverHandler = nullptr;
+
     OLEDMenuManager(SSD1306Wire *display);
     OLEDMenuItem *allocItem();
     OLEDMenuItem *registerItem(OLEDMenuItem *parent, uint16_t tag, uint16_t imageWidth, uint16_t imageHeight, const uint8_t *xbmImage, MenuItemHandler handler = nullptr, OLEDDISPLAY_TEXT_ALIGNMENT alignment = TEXT_ALIGN_CENTER);
