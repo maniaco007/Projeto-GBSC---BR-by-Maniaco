@@ -9891,7 +9891,13 @@ void startWebserver()
             int params = request->params();
 
             if (params > 0) {
-                SlotMetaArray slotsObject;
+                // static: this handler runs from the async web server's TCP
+                // callback chain, which has much less stack headroom than
+                // the main loop() task. slotsObject + icons + inputs
+                // together are ~2.5KB; keeping them off the stack avoids an
+                // overflow/crash (seen as the device rebooting right when
+                // saving a preset with an icon selected).
+                static SlotMetaArray slotsObject;
                 File slotsBinaryFileRead = LittleFS.open(SLOTS_FILE, "r");
 
                 if (slotsBinaryFileRead) {
@@ -9945,7 +9951,8 @@ void startWebserver()
                 slotsBinaryOutputFile.close();
 
                 // icon param (optional, defaults to 0 / generic)
-                uint8_t icons[SLOTS_TOTAL] = {0};
+                static uint8_t icons[SLOTS_TOTAL];
+                memset(icons, 0, sizeof(icons));
                 File iconsRead = LittleFS.open(SLOT_ICONS_FILE, "r");
                 if (iconsRead && iconsRead.size() == SLOTS_TOTAL) {
                     iconsRead.read(icons, SLOTS_TOTAL);
@@ -9964,7 +9971,8 @@ void startWebserver()
                 // "Link Perfil->Entrada" (idea from OSSC): remember which
                 // physical input was active while this preset was tuned, so
                 // loading it later can switch back to it automatically.
-                uint8_t inputs[SLOTS_TOTAL] = {0};
+                static uint8_t inputs[SLOTS_TOTAL];
+                memset(inputs, 0, sizeof(inputs));
                 File inputsRead = LittleFS.open(SLOT_INPUT_FILE, "r");
                 if (inputsRead && inputsRead.size() == SLOTS_TOTAL) {
                     inputsRead.read(inputs, SLOTS_TOTAL);
@@ -10003,13 +10011,17 @@ void startWebserver()
                 Ascii8 nextSlot;
                 auto currentSlot = slotIndexMap.indexOf(slot);
 
-                SlotMetaArray slotsObject;
+                // static: see the comment in /slot/save - this handler also
+                // runs from the async web server's callback chain, where a
+                // couple KB of stack locals risks an overflow/reboot.
+                static SlotMetaArray slotsObject;
                 File slotsBinaryFileRead = LittleFS.open(SLOTS_FILE, "r");
                 slotsBinaryFileRead.read((byte *)&slotsObject, sizeof(slotsObject));
                 slotsBinaryFileRead.close();
                 String slotName = slotsObject.slot[currentSlot].name;
 
-                uint8_t icons[SLOTS_TOTAL] = {0};
+                static uint8_t icons[SLOTS_TOTAL];
+                memset(icons, 0, sizeof(icons));
                 File iconsFileRead = LittleFS.open(SLOT_ICONS_FILE, "r");
                 if (iconsFileRead && iconsFileRead.size() == SLOTS_TOTAL) {
                     iconsFileRead.read(icons, SLOTS_TOTAL);
@@ -10018,7 +10030,8 @@ void startWebserver()
                     iconsFileRead.close();
                 }
 
-                uint8_t inputs[SLOTS_TOTAL] = {0};
+                static uint8_t inputs[SLOTS_TOTAL];
+                memset(inputs, 0, sizeof(inputs));
                 File inputsFileRead = LittleFS.open(SLOT_INPUT_FILE, "r");
                 if (inputsFileRead && inputsFileRead.size() == SLOTS_TOTAL) {
                     inputsFileRead.read(inputs, SLOTS_TOTAL);

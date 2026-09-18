@@ -580,16 +580,6 @@ section[name="iconpicker"] {
   width: 26px;
 }
 
-.gbs-icon-picker__actions {
-  justify-content: center;
-}
-
-.gbs-icon-picker__actions .gbs-button__control {
-  flex-grow: 0;
-  text-align: center;
-  width: 160px;
-}
-
 .gbs-modal__message {
   text-align: right;
   margin-top: 16px;

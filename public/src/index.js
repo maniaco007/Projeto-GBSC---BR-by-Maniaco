@@ -135,6 +135,7 @@ const GBSControl = {
         iconPicker: null,
         iconPickerGrid: null,
         iconPickerCancel: null,
+        iconPickerOk: null,
     },
     updateTerminalTimer: 0,
     webSocketServerUrl: "",
@@ -1304,6 +1305,7 @@ const initUIElements = () => {
         iconPicker: document.querySelector('section[name="iconpicker"]'),
         iconPickerGrid: document.querySelector("[gbs-icon-picker-grid]"),
         iconPickerCancel: document.querySelector("[gbs-icon-picker-cancel]"),
+        iconPickerOk: document.querySelector("[gbs-icon-picker-ok]"),
     };
 };
 const initGeneralListeners = () => {
@@ -1453,8 +1455,10 @@ const gbsIconPromptPromise = {
     resolve: null,
     reject: null,
 };
+let selectedIconId = 0;
 const gbsIconPrompt = (currentIconId = 0) => {
     GBSControl.ui.iconPicker.removeAttribute("hidden");
+    selectedIconId = currentIconId;
     const items = nodelistToArray(GBSControl.ui.iconPickerGrid.querySelectorAll("[gbs-icon-picker-id]"));
     items.forEach((item) => {
         const id = parseInt(item.getAttribute("gbs-icon-picker-id"), 10);
@@ -1471,23 +1475,32 @@ const gbsIconPrompt = (currentIconId = 0) => {
     });
 };
 const initIconPicker = () => {
+    const items = [];
     for (let i = 0; i < SLOT_ICON_COUNT; i++) {
         const item = document.createElement("button");
         item.className = "gbs-button gbs-icon-picker__item";
         item.setAttribute("gbs-icon-picker-id", String(i));
         item.innerHTML = `<svg><use href="#gbs-slot-icon-${i}"></use></svg>`;
+        // Just select/highlight the icon here - saving only happens on OK, so a
+        // stray tap doesn't immediately commit (and trigger a preset save).
         item.addEventListener("click", () => {
-            GBSControl.ui.iconPicker.setAttribute("hidden", "");
-            if (gbsIconPromptPromise.resolve) {
-                gbsIconPromptPromise.resolve(i);
-            }
+            selectedIconId = i;
+            items.forEach((el) => el.removeAttribute("active"));
+            item.setAttribute("active", "");
         });
+        items.push(item);
         GBSControl.ui.iconPickerGrid.appendChild(item);
     }
     GBSControl.ui.iconPickerCancel.addEventListener("click", () => {
         GBSControl.ui.iconPicker.setAttribute("hidden", "");
         if (gbsIconPromptPromise.reject) {
             gbsIconPromptPromise.reject();
+        }
+    });
+    GBSControl.ui.iconPickerOk.addEventListener("click", () => {
+        GBSControl.ui.iconPicker.setAttribute("hidden", "");
+        if (gbsIconPromptPromise.resolve) {
+            gbsIconPromptPromise.resolve(selectedIconId);
         }
     });
 };

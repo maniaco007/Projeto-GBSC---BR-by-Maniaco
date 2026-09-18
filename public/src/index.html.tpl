@@ -1653,10 +1653,17 @@
               <div>Escolha um ícone</div>
             </legend>
             <div class="gbs-flex gbs-icon-picker" gbs-icon-picker-grid></div>
-            <div class="gbs-flex gbs-icon-picker__actions">
+            <div class="gbs-flex">
               <button gbs-icon-picker-cancel class="gbs-button gbs-button__control">
                 <div class="gbs-icon">close</div>
                 <div>CANCELAR</div>
+              </button>
+              <button
+                gbs-icon-picker-ok
+                class="gbs-button gbs-button__control gbs-button__secondary"
+              >
+                <div class="gbs-icon">done</div>
+                <div>OK</div>
               </button>
             </div>
           </fieldset>
