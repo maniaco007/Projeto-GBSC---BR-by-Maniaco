@@ -421,6 +421,43 @@
                 <div>Ganho Auto</div>
               </button>
             </div>
+            <!-- prettier-ignore -->
+            <ul class="gbs-help">
+              <li>Ajuste fino por canal (R/G/B), útil quando a placa tem uma tendência de cor (ex.: excesso de vermelho) que o ganho combinado não corrige. Desativa o Ganho Automático.</li>
+            </ul>
+            <div class="gbs-flex gbs-margin__bottom--16">
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="r" gbs-adc-gain-delta="1">
+                <div class="gbs-icon">remove_circle_outline</div>
+                <div>R</div>
+              </button>
+              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-adc-gain-readout="r">—</div>
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="r" gbs-adc-gain-delta="-1">
+                <div class="gbs-icon">add_circle_outline</div>
+                <div>R</div>
+              </button>
+            </div>
+            <div class="gbs-flex gbs-margin__bottom--16">
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="g" gbs-adc-gain-delta="1">
+                <div class="gbs-icon">remove_circle_outline</div>
+                <div>G</div>
+              </button>
+              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-adc-gain-readout="g">—</div>
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="g" gbs-adc-gain-delta="-1">
+                <div class="gbs-icon">add_circle_outline</div>
+                <div>G</div>
+              </button>
+            </div>
+            <div class="gbs-flex gbs-margin__bottom--16">
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="b" gbs-adc-gain-delta="1">
+                <div class="gbs-icon">remove_circle_outline</div>
+                <div>B</div>
+              </button>
+              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-adc-gain-readout="b">—</div>
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="b" gbs-adc-gain-delta="-1">
+                <div class="gbs-icon">add_circle_outline</div>
+                <div>B</div>
+              </button>
+            </div>
           </fieldset>
           <fieldset class="gbs-fieldset gbs-controls">
             <legend class="gbs-fieldset__legend">
@@ -948,6 +985,26 @@
                   gbs-toggle-switch="wantOutputComponent"
                 >
                   toggle_off
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2">
+                  Entrada Manual
+                  <!-- prettier-ignore -->
+                  <ul class="gbs-help">
+                    <li>Por padrão a entrada (RGB/RGBS ou Componente) é detectada automaticamente. Force uma delas se você tem as duas fontes conectadas ao mesmo tempo e quer trocar manualmente.</li>
+                  </ul>
+                  <div class="gbs-flex">
+                    <button class="gbs-button gbs-button__control gbs-input-lock-btn" gbs-input-lock-value="0">
+                      <div>Automático</div>
+                    </button>
+                    <button class="gbs-button gbs-button__control gbs-input-lock-btn" gbs-input-lock-value="1">
+                      <div>RGB/RGBS</div>
+                    </button>
+                    <button class="gbs-button gbs-button__control gbs-input-lock-btn" gbs-input-lock-value="2">
+                      <div>Componente</div>
+                    </button>
+                  </div>
                 </td>
               </tr>
               <tr>

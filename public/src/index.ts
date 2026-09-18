@@ -513,6 +513,87 @@ const deletePreset = () => {
     });
 };
 
+const adcGainState: { r: number; g: number; b: number } = {
+  r: null,
+  g: null,
+  b: null,
+};
+
+const updateAdcGainReadouts = () => {
+  (["r", "g", "b"] as const).forEach((ch) => {
+    const el = document.querySelector(`[gbs-adc-gain-readout="${ch}"]`);
+    if (el) {
+      el.textContent = adcGainState[ch] === null ? "—" : String(adcGainState[ch]);
+    }
+  });
+};
+
+const fetchAdcGain = () => {
+  return fetch(`/gbs/adc-gain?${+new Date()}`)
+    .then((r) => r.json())
+    .then((data: { r: number; g: number; b: number }) => {
+      adcGainState.r = data.r;
+      adcGainState.g = data.g;
+      adcGainState.b = data.b;
+      updateAdcGainReadouts();
+    })
+    .catch(() => {});
+};
+
+const adjustAdcGainChannel = (channel: "r" | "g" | "b", delta: number) => {
+  const current = adcGainState[channel];
+  if (current === null) {
+    return;
+  }
+  const next = Math.max(0, Math.min(255, current + delta));
+  adcGainState[channel] = next;
+  updateAdcGainReadouts();
+  fetch(`/gbs/adc-gain-set?ch=${channel}&value=${next}&${+new Date()}`).catch(() => {});
+};
+
+const initAdcGainButtons = () => {
+  const buttons = nodelistToArray<HTMLElement>(
+    document.querySelectorAll(".gbs-adc-gain-btn")
+  );
+  buttons.forEach((button) => {
+    const channel = button.getAttribute("gbs-adc-gain-channel") as "r" | "g" | "b";
+    const delta = parseInt(button.getAttribute("gbs-adc-gain-delta") || "0", 10);
+    button.addEventListener("click", () => {
+      adjustAdcGainChannel(channel, delta);
+    });
+  });
+  fetchAdcGain();
+};
+
+const initInputLockButtons = () => {
+  const buttons = nodelistToArray<HTMLElement>(
+    document.querySelectorAll(".gbs-input-lock-btn")
+  );
+
+  const markActive = (value: string) => {
+    buttons.forEach((b) => {
+      if (b.getAttribute("gbs-input-lock-value") === value) {
+        b.setAttribute("active", "");
+      } else {
+        b.removeAttribute("active");
+      }
+    });
+  };
+
+  buttons.forEach((button) => {
+    const value = button.getAttribute("gbs-input-lock-value");
+    button.addEventListener("click", () => {
+      markActive(value);
+      fetch(`/gbs/input-lock-set?value=${value}&${+new Date()}`).catch(() => {});
+    });
+  });
+
+  fetch(`/gbs/input-lock?${+new Date()}`)
+    .then((r) => r.json())
+    .then((value: number) => markActive(String(value)))
+    .catch(() => {});
+};
+
 const doImportCustomPresets = () => {
   const button = document.querySelector(
     ".gbs-custom-presets-button"
@@ -1536,6 +1617,8 @@ const initUI = () => {
   initDeveloperMode();
   initHelp();
   initIconPicker();
+  initAdcGainButtons();
+  initInputLockButtons();
 };
 
 const main = () => {

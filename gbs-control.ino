@@ -1009,6 +1009,26 @@ void setAdcGain(uint8_t gain) {
     adco->b_gain = gain;
 }
 
+/// Like setAdcGain(), but for a single channel ('r', 'g' or 'b'). Used by the
+/// per-channel gain sliders, for boards with a color tint that a single
+/// combined gain / auto gain can't correct.
+void setAdcGainChannel(char channel, uint8_t gain) {
+    switch (channel) {
+        case 'r':
+            GBS::ADC_RGCTRL::write(gain);
+            adco->r_gain = gain;
+            break;
+        case 'g':
+            GBS::ADC_GGCTRL::write(gain);
+            adco->g_gain = gain;
+            break;
+        case 'b':
+            GBS::ADC_BGCTRL::write(gain);
+            adco->b_gain = gain;
+            break;
+    }
+}
+
 void setAdcParametersGainAndOffset()
 {
     GBS::ADC_ROFCTRL::write(0x40);
@@ -1461,6 +1481,14 @@ void optimizeSogLevel()
 // If it doesn't find sync, it switches the input and returns 0, so that an active input will be found eventually.
 uint8_t detectAndSwitchToActiveInput()
 { // if any
+    if (uopt->inputSourceLock != 0) {
+        uint8_t lockedInput = (uopt->inputSourceLock == 1) ? 1 : 0; // 1 = RGB/RGBS, 2 = Component
+        if (GBS::ADC_INPUT_SEL::read() != lockedInput) {
+            GBS::ADC_INPUT_SEL::write(lockedInput);
+            delay(200);
+        }
+    }
+
     uint8_t currentInput = GBS::ADC_INPUT_SEL::read();
     unsigned long timeout = millis();
     while (millis() - timeout < 450) {
@@ -1657,8 +1685,10 @@ uint8_t detectAndSwitchToActiveInput()
             setAndUpdateSogLevel(rto->currentLevelSOG);
         }
 
-        GBS::ADC_INPUT_SEL::write(!currentInput); // can only be 1 or 0
-        delay(200);
+        if (uopt->inputSourceLock == 0) {
+            GBS::ADC_INPUT_SEL::write(!currentInput); // can only be 1 or 0
+            delay(200);
+        }
 
         return 0; // don't do the check on the new input here, wait till next run
     }
@@ -7131,6 +7161,8 @@ void loadDefaultUserOptions()
     uopt->enableCalibrationADC = 1;          // #17
     uopt->scanlineStrength = 0x30;           // #18
     uopt->disableExternalClockGenerator = 0; // #19
+    uopt->inputSourceLock = 0;               // #20, 0 = auto detect
+    uopt->screenOffTimeoutMinutes = 0;       // #21, 0 = disabled
 }
 
 #if !ENABLE_WIFI
@@ -7443,6 +7475,13 @@ void setup()
             uopt->disableExternalClockGenerator = (uint8_t)(f.read() - '0'); // #19
             if (uopt->disableExternalClockGenerator > 1)
                 uopt->disableExternalClockGenerator = 0;
+
+            uopt->inputSourceLock = (uint8_t)(f.read() - '0'); // #20
+            if (uopt->inputSourceLock > 2)
+                uopt->inputSourceLock = 0;
+
+            int screenOffRead = f.read(); // #21, raw byte (0-254 minutes, 255 == unset/old file)
+            uopt->screenOffTimeoutMinutes = (screenOffRead < 0 || screenOffRead == 255) ? 0 : (uint8_t)screenOffRead;
 
             f.close();
         }
@@ -9981,6 +10020,52 @@ void startWebserver()
         request->send(200, "application/json", result ? "true" : "false");
     });
 
+    // Per-channel ADC gain (independent R/G/B), for boards with a color tint
+    // that the combined gain / auto gain can't correct.
+    server.on("/gbs/adc-gain", HTTP_GET, [](AsyncWebServerRequest *request) {
+        String json = "{\"r\":" + String(adco->r_gain) +
+                       ",\"g\":" + String(adco->g_gain) +
+                       ",\"b\":" + String(adco->b_gain) +
+                       ",\"auto\":" + String(uopt->enableAutoGain ? "true" : "false") + "}";
+        request->send(200, "application/json", json);
+    });
+
+    // Manual input source override: 0 = auto detect, 1 = force RGB/RGBS, 2 = force Component/YPbPr.
+    server.on("/gbs/input-lock", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(200, "application/json", String(uopt->inputSourceLock));
+    });
+
+    server.on("/gbs/input-lock-set", HTTP_GET, [](AsyncWebServerRequest *request) {
+        bool result = false;
+        if (request->hasParam("value")) {
+            int value = request->getParam("value")->value().toInt();
+            if (value >= 0 && value <= 2) {
+                uopt->inputSourceLock = (uint8_t)value;
+                saveUserPrefs();
+                result = true;
+            }
+        }
+        request->send(200, "application/json", result ? "true" : "false");
+    });
+
+    server.on("/gbs/adc-gain-set", HTTP_GET, [](AsyncWebServerRequest *request) {
+        bool result = false;
+        if (request->hasParam("ch") && request->hasParam("value")) {
+            String ch = request->getParam("ch")->value();
+            int value = request->getParam("value")->value().toInt();
+            if (ch.length() == 1 && value >= 0 && value <= 255) {
+                char channel = ch.charAt(0);
+                if (channel == 'r' || channel == 'g' || channel == 'b') {
+                    uopt->enableAutoGain = 0;
+                    setAdcGainChannel(channel, (uint8_t)value);
+                    saveUserPrefs();
+                    result = true;
+                }
+            }
+        }
+        request->send(200, "application/json", result ? "true" : "false");
+    });
+
     server.on("/spiffs/upload", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(200, "application/json", "true");
     });
@@ -10393,7 +10478,8 @@ void saveUserPrefs()
     f.write(uopt->enableCalibrationADC + '0');          // #17
     f.write(uopt->scanlineStrength + '0');              // #18
     f.write(uopt->disableExternalClockGenerator + '0'); // #19
-
+    f.write(uopt->inputSourceLock + '0');               // #20
+    f.write(uopt->screenOffTimeoutMinutes);             // #21, raw byte
 
     f.close();
 }

@@ -36,6 +36,10 @@ struct userOptions
     uint8_t wantFullHeight;
     uint8_t enableCalibrationADC;
     uint8_t scanlineStrength;
+    // 0 - auto detect (default), 1 - force RGB/RGBS, 2 - force Component/YPbPr
+    uint8_t inputSourceLock;
+    // screen / output shuts off after this many minutes without sync; 0 = disabled
+    uint8_t screenOffTimeoutMinutes;
 };
 
 
