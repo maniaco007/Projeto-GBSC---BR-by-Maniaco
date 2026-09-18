@@ -24,111 +24,136 @@ menu_items = [
         "tag": "OM_STATUS_CUSTOM",
         "en-US": "Main Menu",
         "zh-CN": "主菜单",
+        "pt-BR": "Menu",
         # should not be larger than 12 (or adjust according to MENU_STATUS_BAR_HEIGHT)
         "size": 12,
     },
     {
         "tag": "OM_STATUS_BAR_BACK",
         "en-US": "←Back",
+        "pt-BR": "←Voltar",
         # should not be larger than 12 (or adjust according to MENU_STATUS_BAR_HEIGHT)
         "size": 12
     },
     {
         "tag": "OM_SCREEN_SAVER",
         "en-US": "Press Any Key",
+        "pt-BR": "Pressione",
     },
     {
         "tag": "OM_RESOLUTION",
         "en-US": "Resolutions",
+        "pt-BR": "Resoluções",
     },
     {
         "tag": "OM_PASSTHROUGH",
         "en-US": "Passthrough",
+        "pt-BR": "Passagem",
     },
     {
         "tag": "OM_DOWNSCALE",
         "en-US": "Down-Scale",
+        "pt-BR": "Reduzir",
     },
     {
         "tag": "OM_PRESET",
         "en-US": "Presets",
+        "pt-BR": "Perfis",
     },
     {
         "tag": "OM_RESET_RESTORE",
         "en-US": "Reset/Restore",
+        "pt-BR": "Reset/Restaurar",
     },
     {
         "tag": "OM_RESET_GBS",
         "en-US": "Reset GBS",
+        "pt-BR": "Resetar GBS",
     },
     {
         "tag": "OM_RESET_WIFI",
         "en-US": "Clear WiFi Connections",
+        "pt-BR": "Limpar Conexões WiFi",
     },
     {
         "tag": "OM_RESTORE_FACTORY",
         "en-US": "Restore Factory",
+        "pt-BR": "Restaurar Fábrica",
     },
     {
         "tag": "OM_CURRENT",
         "en-US": "Current Output",
+        "pt-BR": "Saída Atual",
     },
     {
         "tag": "OM_WIFI",
         "en-US": "WiFi Info",
+        "pt-BR": "Info WiFi",
     },
     {
         "tag": "TEXT_NO_PRESETS",
         "en-US": "No Presets. Please use the Web UI to create one first.",
+        "pt-BR": "Sem perfis. Use o Web UI para criar.",
     },
     {
         "tag": "TEXT_TOO_MANY_PRESETS",
         "en-US": "Please use WebUI to access more presets.",
+        "pt-BR": "Use o Web UI para ver mais perfis.",
     },
     {
         "tag": "TEXT_RESETTING_GBS",
         "en-US": "Resetting GBS\nPlease wait\n...",
+        "pt-BR": "Resetando GBS\nAguarde\n...",
         "size": 16,
     },
     {
         "tag": "TEXT_RESETTING_WIFI",
         "en-US": "Resetting WiFi\nPlease wait\n...",
+        "pt-BR": "Resetando WiFi\nAguarde\n...",
         "size": 16,
     },
     {
         "tag": "TEXT_RESTORING",
         "en-US": "Factory Restoring\nPlease wait\n...",
+        "pt-BR": "Restaurando Fábrica\nAguarde\n...",
         "size": 16,
     },
     {
         "tag": "TEXT_WIFI_CONNECT_TO",
         "en-US": "Connect to the following SSID (password) before using the Web UI",
+        "pt-BR": "Conecte ao SSID (senha) abaixo antes de usar o Web UI",
     },
     {
         "tag": "TEXT_WIFI_CONNECTED",
         "en-US": "Status: Connected",
+        "pt-BR": "Status: Conectado",
     },
     {
         "tag": "TEXT_WIFI_DISCONNECTED",
         "en-US": "Status: Disconnected",
+        "pt-BR": "Status: Desconectado",
     },
     {
         "tag": "TEXT_WIFI_URL",
         "en-US": "Use one of the following URLs to use the Web UI",
+        "pt-BR": "Use uma das URLs abaixo para o Web UI",
     },
     {
         "tag": "TEXT_LOADED",
         "en-US": "Loaded",
+        "pt-BR": "Carregado",
         "size": 16
     },
     {
         "tag": "TEXT_NO_INPUT",
         "en-US": "No Input",
+        "pt-BR": "Sem Sinal",
         "size": 16
     },
     {
         "tag": "OM_OSD",
         "en-US": "Open OSD Menu",
+        "pt-BR": "Abrir Menu OSD",
     },
 
 

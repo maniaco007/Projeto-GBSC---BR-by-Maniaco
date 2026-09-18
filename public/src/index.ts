@@ -466,6 +466,114 @@ const loadPreset = () => {
   });
 };
 
+const deletePreset = () => {
+  const currentSlot = document.querySelector('[gbs-role="slot"][active]');
+  if (!currentSlot) {
+    return;
+  }
+  const currentIndex = parseInt(
+    currentSlot.getAttribute("gbs-slot-id") || "0",
+    10
+  );
+  const slotData = GBSControl.structs.slots[currentIndex];
+  const slotName = slotData && slotData.name ? slotData.name.trim() : "";
+  if (!slotName || slotName === "Empty") {
+    return;
+  }
+  const ok = confirm(
+    `Apagar o preset "${slotName}"?\n\nIsso remove todos os arquivos desse slot e desloca os slots seguintes para cima.`
+  );
+  if (!ok) {
+    return;
+  }
+  fetch(`/slot/remove?1&${+new Date()}`)
+    .then((r) => r.json())
+    .then((success: boolean) => {
+      if (success) {
+        setTimeout(() => {
+          fetchSlotNames().then((ok: boolean) => {
+            if (ok) updateSlotNames();
+          });
+        }, 300);
+      } else {
+        gbsAlert("Falha ao apagar o preset").catch(() => {});
+      }
+    })
+    .catch(() => {
+      gbsAlert("Erro ao apagar o preset").catch(() => {});
+    });
+};
+
+const doImportCustomPresets = () => {
+  const button = document.querySelector(
+    ".gbs-custom-presets-button"
+  ) as HTMLButtonElement;
+  const label = button ? (button.querySelector("div:last-child") as HTMLElement) : null;
+  const originalLabel = label ? label.textContent : "";
+  const setLabel = (s: string) => {
+    if (label) label.textContent = s;
+  };
+  const release = () => {
+    if (button) button.removeAttribute("disabled");
+    setLabel(originalLabel);
+  };
+
+  const ok = confirm(
+    "Importar os perfis padrão deste projeto?\n\nIsso sobrescreve os slots correspondentes (A, B, C...). Os demais slots não são afetados."
+  );
+  if (!ok) {
+    return;
+  }
+
+  if (button) button.setAttribute("disabled", "");
+
+  const checkStatus = (r: Response) => {
+    if (!r.ok) {
+      throw new Error(`HTTP ${r.status}`);
+    }
+    return r.json();
+  };
+
+  fetch(`/gbs/custom-presets-count?${+new Date()}`)
+    .then(checkStatus)
+    .then((count: number) => {
+      const writeOne = (i: number): Promise<void> => {
+        if (i >= count) {
+          return fetch(`/gbs/custom-presets-slots?${+new Date()}`)
+            .then(checkStatus)
+            .then((success: boolean) => {
+              if (!success) {
+                throw new Error("slots write failed");
+              }
+            });
+        }
+        setLabel(`${i + 1}/${count}`);
+        return fetch(`/gbs/custom-presets-apply?i=${i}&${+new Date()}`)
+          .then(checkStatus)
+          .then((success: boolean) => {
+            if (!success) {
+              throw new Error("preset " + i + " write failed");
+            }
+            return writeOne(i + 1);
+          });
+      };
+      return writeOne(0);
+    })
+    .then(() => {
+      setLabel("OK");
+      setTimeout(() => {
+        fetchSlotNames().then((success: boolean) => {
+          if (success) updateSlotNames();
+          release();
+        });
+      }, 300);
+    })
+    .catch(() => {
+      gbsAlert("Falha ao importar os perfis padrão").catch(() => {});
+      release();
+    });
+};
+
 const getSlotsHTML = () => {
   // prettier-ignore
   return [
@@ -1224,6 +1332,12 @@ const initGeneralListeners = () => {
   });
 
   GBSControl.ui.backupButton.addEventListener("click", doBackup);
+  const customPresetsButton = document.querySelector(
+    ".gbs-custom-presets-button"
+  );
+  if (customPresetsButton) {
+    customPresetsButton.addEventListener("click", doImportCustomPresets);
+  }
   GBSControl.ui.wifiListTable.addEventListener("click", wifiSelectSSID);
   GBSControl.ui.wifiConnectButton.addEventListener("click", wifiConnect);
   GBSControl.ui.wifiApButton.addEventListener("click", wifiSetAPMode);
