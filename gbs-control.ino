@@ -74,6 +74,7 @@ volatile int oled_sub_pointer = 0;
 #include <ESPAsyncWebServer.h>
 #endif
 #include "FS.h"
+#include <LittleFS.h>
 #if ENABLE_WIFI
 #include <DNSServer.h>
 #include <WiFiUdp.h>
@@ -7422,11 +7423,22 @@ void setup()
     GBS::PLLAD_PDZ::write(0); // AD PLL off
 
     // file system (web page, custom presets, ect)
-    if (!SPIFFS.begin()) {
-        SerialM.println(F("SPIFFS mount failed! ((1M SPIFFS) selected?)"));
-    } else {
+    boolean fsMounted = LittleFS.begin();
+    if (!fsMounted) {
+        // First boot after migrating from SPIFFS, or a genuinely blank/corrupt
+        // partition. Unlike SPIFFS, LittleFS.begin() does not auto-format, so
+        // do it once here. This wipes whatever SPIFFS had stored (presets,
+        // wifi info, preferences); back those up via the webui first.
+        SerialM.println(F("LittleFS mount failed, formatting (one-time, e.g. after a SPIFFS->LittleFS migration)..."));
+        LittleFS.format();
+        fsMounted = LittleFS.begin();
+        if (!fsMounted) {
+            SerialM.println(F("LittleFS mount failed even after formatting!"));
+        }
+    }
+    if (fsMounted) {
         // load user preferences file
-        File f = SPIFFS.open("/preferencesv2.txt", "r");
+        File f = LittleFS.open("/preferencesv2.txt", "r");
         if (!f) {
             SerialM.println(F("no preferences file yet, create new"));
             loadDefaultUserOptions();
@@ -9179,7 +9191,7 @@ void handleType2Command(char argument)
             break;
         case 'e': // print files on spiffs
         {
-            Dir dir = SPIFFS.openDir("/");
+            Dir dir = LittleFS.openDir("/");
             while (dir.next()) {
                 SerialM.print(dir.fileName());
                 SerialM.print(" ");
@@ -9187,7 +9199,7 @@ void handleType2Command(char argument)
                 delay(1); // wifi stack
             }
             ////
-            File f = SPIFFS.open("/preferencesv2.txt", "r");
+            File f = LittleFS.open("/preferencesv2.txt", "r");
             if (!f) {
                 SerialM.println(F("failed opening preferences file"));
             } else {
@@ -9761,10 +9773,10 @@ void startWebserver()
     server.on("/bin/slots.bin", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (ESP.getFreeHeap() > 10000) {
             SlotMetaArray slotsObject;
-            File slotsBinaryFileRead = SPIFFS.open(SLOTS_FILE, "r");
+            File slotsBinaryFileRead = LittleFS.open(SLOTS_FILE, "r");
 
             if (!slotsBinaryFileRead) {
-                File slotsBinaryFileWrite = SPIFFS.open(SLOTS_FILE, "w");
+                File slotsBinaryFileWrite = LittleFS.open(SLOTS_FILE, "w");
                 for (int i = 0; i < SLOTS_TOTAL; i++) {
                     slotsObject.slot[i].slot = i;
                     slotsObject.slot[i].presetID = 0;
@@ -9782,26 +9794,26 @@ void startWebserver()
                 slotsBinaryFileRead.close();
             }
 
-            request->send(SPIFFS, "/slots.bin", "application/octet-stream");
+            request->send(LittleFS, "/slots.bin", "application/octet-stream");
         }
     });
 
     server.on("/bin/slot_icons.bin", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (ESP.getFreeHeap() > 10000) {
-            File iconsRead = SPIFFS.open(SLOT_ICONS_FILE, "r");
+            File iconsRead = LittleFS.open(SLOT_ICONS_FILE, "r");
             if (!iconsRead || iconsRead.size() != SLOTS_TOTAL) {
                 if (iconsRead) {
                     iconsRead.close();
                 }
                 uint8_t icons[SLOTS_TOTAL] = {0};
-                File iconsWrite = SPIFFS.open(SLOT_ICONS_FILE, "w");
+                File iconsWrite = LittleFS.open(SLOT_ICONS_FILE, "w");
                 iconsWrite.write(icons, SLOTS_TOTAL);
                 iconsWrite.close();
             } else {
                 iconsRead.close();
             }
 
-            request->send(SPIFFS, SLOT_ICONS_FILE, "application/octet-stream");
+            request->send(LittleFS, SLOT_ICONS_FILE, "application/octet-stream");
         }
     });
 
@@ -9834,13 +9846,13 @@ void startWebserver()
 
             if (params > 0) {
                 SlotMetaArray slotsObject;
-                File slotsBinaryFileRead = SPIFFS.open(SLOTS_FILE, "r");
+                File slotsBinaryFileRead = LittleFS.open(SLOTS_FILE, "r");
 
                 if (slotsBinaryFileRead) {
                     slotsBinaryFileRead.read((byte *)&slotsObject, sizeof(slotsObject));
                     slotsBinaryFileRead.close();
                 } else {
-                    File slotsBinaryFileWrite = SPIFFS.open(SLOTS_FILE, "w");
+                    File slotsBinaryFileWrite = LittleFS.open(SLOTS_FILE, "w");
 
                     for (int i = 0; i < SLOTS_TOTAL; i++) {
                         slotsObject.slot[i].slot = i;
@@ -9882,13 +9894,13 @@ void startWebserver()
                 slotsObject.slot[slotIndex].wantStepResponse = uopt->wantStepResponse;
                 slotsObject.slot[slotIndex].wantPeaking = uopt->wantPeaking;
 
-                File slotsBinaryOutputFile = SPIFFS.open(SLOTS_FILE, "w");
+                File slotsBinaryOutputFile = LittleFS.open(SLOTS_FILE, "w");
                 slotsBinaryOutputFile.write((byte *)&slotsObject, sizeof(slotsObject));
                 slotsBinaryOutputFile.close();
 
                 // icon param (optional, defaults to 0 / generic)
                 uint8_t icons[SLOTS_TOTAL] = {0};
-                File iconsRead = SPIFFS.open(SLOT_ICONS_FILE, "r");
+                File iconsRead = LittleFS.open(SLOT_ICONS_FILE, "r");
                 if (iconsRead && iconsRead.size() == SLOTS_TOTAL) {
                     iconsRead.read(icons, SLOTS_TOTAL);
                 }
@@ -9899,7 +9911,7 @@ void startWebserver()
                     AsyncWebParameter *slotIconParam = request->getParam(2);
                     icons[slotIndex] = lowByte(slotIconParam->value().toInt());
                 }
-                File iconsWrite = SPIFFS.open(SLOT_ICONS_FILE, "w");
+                File iconsWrite = LittleFS.open(SLOT_ICONS_FILE, "w");
                 iconsWrite.write(icons, SLOTS_TOTAL);
                 iconsWrite.close();
 
@@ -9930,13 +9942,13 @@ void startWebserver()
                 auto currentSlot = slotIndexMap.indexOf(slot);
 
                 SlotMetaArray slotsObject;
-                File slotsBinaryFileRead = SPIFFS.open(SLOTS_FILE, "r");
+                File slotsBinaryFileRead = LittleFS.open(SLOTS_FILE, "r");
                 slotsBinaryFileRead.read((byte *)&slotsObject, sizeof(slotsObject));
                 slotsBinaryFileRead.close();
                 String slotName = slotsObject.slot[currentSlot].name;
 
                 uint8_t icons[SLOTS_TOTAL] = {0};
-                File iconsFileRead = SPIFFS.open(SLOT_ICONS_FILE, "r");
+                File iconsFileRead = LittleFS.open(SLOT_ICONS_FILE, "r");
                 if (iconsFileRead && iconsFileRead.size() == SLOTS_TOTAL) {
                     iconsFileRead.read(icons, SLOTS_TOTAL);
                 }
@@ -9945,15 +9957,15 @@ void startWebserver()
                 }
 
                 // remove preset files
-                SPIFFS.remove("/preset_ntsc." + String((char)slot));
-                SPIFFS.remove("/preset_pal." + String((char)slot));
-                SPIFFS.remove("/preset_ntsc_480p." + String((char)slot));
-                SPIFFS.remove("/preset_pal_576p." + String((char)slot));
-                SPIFFS.remove("/preset_ntsc_720p." + String((char)slot));
-                SPIFFS.remove("/preset_ntsc_1080p." + String((char)slot));
-                SPIFFS.remove("/preset_medium_res." + String((char)slot));
-                SPIFFS.remove("/preset_vga_upscale." + String((char)slot));
-                SPIFFS.remove("/preset_unknown." + String((char)slot));
+                LittleFS.remove("/preset_ntsc." + String((char)slot));
+                LittleFS.remove("/preset_pal." + String((char)slot));
+                LittleFS.remove("/preset_ntsc_480p." + String((char)slot));
+                LittleFS.remove("/preset_pal_576p." + String((char)slot));
+                LittleFS.remove("/preset_ntsc_720p." + String((char)slot));
+                LittleFS.remove("/preset_ntsc_1080p." + String((char)slot));
+                LittleFS.remove("/preset_medium_res." + String((char)slot));
+                LittleFS.remove("/preset_vga_upscale." + String((char)slot));
+                LittleFS.remove("/preset_unknown." + String((char)slot));
 
                 uint8_t loopCount = 0;
                 uint8_t flag = 1;
@@ -9962,15 +9974,15 @@ void startWebserver()
                     slot = slotIndexMap[currentSlot + loopCount];
                     nextSlot = slotIndexMap[currentSlot + loopCount + 1];
                     flag = 0;
-                    flag += SPIFFS.rename("/preset_ntsc." + String((char)(nextSlot)), "/preset_ntsc." + String((char)slot));
-                    flag += SPIFFS.rename("/preset_pal." + String((char)(nextSlot)), "/preset_pal." + String((char)slot));
-                    flag += SPIFFS.rename("/preset_ntsc_480p." + String((char)(nextSlot)), "/preset_ntsc_480p." + String((char)slot));
-                    flag += SPIFFS.rename("/preset_pal_576p." + String((char)(nextSlot)), "/preset_pal_576p." + String((char)slot));
-                    flag += SPIFFS.rename("/preset_ntsc_720p." + String((char)(nextSlot)), "/preset_ntsc_720p." + String((char)slot));
-                    flag += SPIFFS.rename("/preset_ntsc_1080p." + String((char)(nextSlot)), "/preset_ntsc_1080p." + String((char)slot));
-                    flag += SPIFFS.rename("/preset_medium_res." + String((char)(nextSlot)), "/preset_medium_res." + String((char)slot));
-                    flag += SPIFFS.rename("/preset_vga_upscale." + String((char)(nextSlot)), "/preset_vga_upscale." + String((char)slot));
-                    flag += SPIFFS.rename("/preset_unknown." + String((char)(nextSlot)), "/preset_unknown." + String((char)slot));
+                    flag += LittleFS.rename("/preset_ntsc." + String((char)(nextSlot)), "/preset_ntsc." + String((char)slot));
+                    flag += LittleFS.rename("/preset_pal." + String((char)(nextSlot)), "/preset_pal." + String((char)slot));
+                    flag += LittleFS.rename("/preset_ntsc_480p." + String((char)(nextSlot)), "/preset_ntsc_480p." + String((char)slot));
+                    flag += LittleFS.rename("/preset_pal_576p." + String((char)(nextSlot)), "/preset_pal_576p." + String((char)slot));
+                    flag += LittleFS.rename("/preset_ntsc_720p." + String((char)(nextSlot)), "/preset_ntsc_720p." + String((char)slot));
+                    flag += LittleFS.rename("/preset_ntsc_1080p." + String((char)(nextSlot)), "/preset_ntsc_1080p." + String((char)slot));
+                    flag += LittleFS.rename("/preset_medium_res." + String((char)(nextSlot)), "/preset_medium_res." + String((char)slot));
+                    flag += LittleFS.rename("/preset_vga_upscale." + String((char)(nextSlot)), "/preset_vga_upscale." + String((char)slot));
+                    flag += LittleFS.rename("/preset_unknown." + String((char)(nextSlot)), "/preset_unknown." + String((char)slot));
 
                     slotsObject.slot[currentSlot + loopCount].slot = slotsObject.slot[currentSlot + loopCount + 1].slot;
                     slotsObject.slot[currentSlot + loopCount].presetID = slotsObject.slot[currentSlot + loopCount + 1].presetID;
@@ -9985,11 +9997,11 @@ void startWebserver()
                     loopCount++;
                 }
 
-                File slotsBinaryFileWrite = SPIFFS.open(SLOTS_FILE, "w");
+                File slotsBinaryFileWrite = LittleFS.open(SLOTS_FILE, "w");
                 slotsBinaryFileWrite.write((byte *)&slotsObject, sizeof(slotsObject));
                 slotsBinaryFileWrite.close();
 
-                File iconsFileWrite = SPIFFS.open(SLOT_ICONS_FILE, "w");
+                File iconsFileWrite = LittleFS.open(SLOT_ICONS_FILE, "w");
                 iconsFileWrite.write(icons, SLOTS_TOTAL);
                 iconsFileWrite.close();
 
@@ -10023,7 +10035,7 @@ void startWebserver()
                     content += buf;
                 }
                 content += "};\r\n";
-                File f = SPIFFS.open(entry.path, "w");
+                File f = LittleFS.open(entry.path, "w");
                 if (f) {
                     f.write((const uint8_t *)content.c_str(), content.length());
                     f.close();
@@ -10038,7 +10050,7 @@ void startWebserver()
         bool result = false;
         if (ESP.getFreeHeap() > 10000) {
             SlotMetaArray slotsObject;
-            File slotsRead = SPIFFS.open(SLOTS_FILE, "r");
+            File slotsRead = LittleFS.open(SLOTS_FILE, "r");
             if (slotsRead) {
                 slotsRead.read((byte *)&slotsObject, sizeof(slotsObject));
                 slotsRead.close();
@@ -10056,7 +10068,7 @@ void startWebserver()
             }
 
             uint8_t icons[SLOTS_TOTAL] = {0};
-            File iconsRead = SPIFFS.open(SLOT_ICONS_FILE, "r");
+            File iconsRead = LittleFS.open(SLOT_ICONS_FILE, "r");
             if (iconsRead && iconsRead.size() == SLOTS_TOTAL) {
                 iconsRead.read(icons, SLOTS_TOTAL);
             }
@@ -10079,7 +10091,7 @@ void startWebserver()
                 icons[s.slotIdx] = s.iconId;
             }
 
-            File slotsWrite = SPIFFS.open(SLOTS_FILE, "w");
+            File slotsWrite = LittleFS.open(SLOTS_FILE, "w");
             if (slotsWrite) {
                 slotsWrite.write((byte *)&slotsObject, sizeof(slotsObject));
                 slotsWrite.close();
@@ -10087,7 +10099,7 @@ void startWebserver()
                 SerialM.println(F("custom preset slots applied"));
             }
 
-            File iconsWrite = SPIFFS.open(SLOT_ICONS_FILE, "w");
+            File iconsWrite = LittleFS.open(SLOT_ICONS_FILE, "w");
             iconsWrite.write(icons, SLOTS_TOTAL);
             iconsWrite.close();
         }
@@ -10186,7 +10198,7 @@ void startWebserver()
         [](AsyncWebServerRequest *request) { request->send(200, "application/json", "true"); },
         [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
             if (!index) {
-                request->_tempFile = SPIFFS.open("/" + filename, "w");
+                request->_tempFile = LittleFS.open("/" + filename, "w");
             }
             if (len) {
                 request->_tempFile.write(data, len);
@@ -10200,7 +10212,7 @@ void startWebserver()
         if (ESP.getFreeHeap() > 10000) {
             int params = request->params();
             if (params > 0) {
-                request->send(SPIFFS, request->getParam(0)->value(), String(), true);
+                request->send(LittleFS, request->getParam(0)->value(), String(), true);
             } else {
                 request->send(200, "application/json", "false");
             }
@@ -10211,7 +10223,7 @@ void startWebserver()
 
     server.on("/spiffs/dir", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (ESP.getFreeHeap() > 10000) {
-            Dir dir = SPIFFS.openDir("/");
+            Dir dir = LittleFS.openDir("/");
             String output = "[";
 
             while (dir.next()) {
@@ -10232,7 +10244,7 @@ void startWebserver()
     });
 
     server.on("/spiffs/format", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(200, "application/json", SPIFFS.format() ? "true" : "false");
+        request->send(200, "application/json", LittleFS.format() ? "true" : "false");
     });
 
     server.on("/wifi/status", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -10242,7 +10254,7 @@ void startWebserver()
 
     server.on("/gbs/restore-filters", HTTP_GET, [](AsyncWebServerRequest *request) {
         SlotMetaArray slotsObject;
-        File slotsBinaryFileRead = SPIFFS.open(SLOTS_FILE, "r");
+        File slotsBinaryFileRead = LittleFS.open(SLOTS_FILE, "r");
         bool result = false;
         if (slotsBinaryFileRead) {
             slotsBinaryFileRead.read((byte *)&slotsObject, sizeof(slotsObject));
@@ -10336,8 +10348,8 @@ void initUpdateOTA()
         else // U_SPIFFS
             type = "filesystem";
 
-        // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-        SPIFFS.end();
+        // NOTE: if updating LittleFS this would be the place to unmount LittleFS using LittleFS.end()
+        LittleFS.end();
         SerialM.println("Start updating " + type);
     });
     ArduinoOTA.onEnd([]() {
@@ -10379,7 +10391,7 @@ const uint8_t *loadPresetFromSPIFFS(byte forVideoMode)
     Ascii8 slot = 0;
     File f;
 
-    f = SPIFFS.open("/preferencesv2.txt", "r");
+    f = LittleFS.open("/preferencesv2.txt", "r");
     if (f) {
         SerialM.println(F("preferencesv2.txt opened"));
         uint8_t result[3];
@@ -10403,23 +10415,23 @@ const uint8_t *loadPresetFromSPIFFS(byte forVideoMode)
     SerialM.print(": ");
 
     if (forVideoMode == 1) {
-        f = SPIFFS.open("/preset_ntsc." + String((char)slot), "r");
+        f = LittleFS.open("/preset_ntsc." + String((char)slot), "r");
     } else if (forVideoMode == 2) {
-        f = SPIFFS.open("/preset_pal." + String((char)slot), "r");
+        f = LittleFS.open("/preset_pal." + String((char)slot), "r");
     } else if (forVideoMode == 3) {
-        f = SPIFFS.open("/preset_ntsc_480p." + String((char)slot), "r");
+        f = LittleFS.open("/preset_ntsc_480p." + String((char)slot), "r");
     } else if (forVideoMode == 4) {
-        f = SPIFFS.open("/preset_pal_576p." + String((char)slot), "r");
+        f = LittleFS.open("/preset_pal_576p." + String((char)slot), "r");
     } else if (forVideoMode == 5) {
-        f = SPIFFS.open("/preset_ntsc_720p." + String((char)slot), "r");
+        f = LittleFS.open("/preset_ntsc_720p." + String((char)slot), "r");
     } else if (forVideoMode == 6) {
-        f = SPIFFS.open("/preset_ntsc_1080p." + String((char)slot), "r");
+        f = LittleFS.open("/preset_ntsc_1080p." + String((char)slot), "r");
     } else if (forVideoMode == 8) {
-        f = SPIFFS.open("/preset_medium_res." + String((char)slot), "r");
+        f = LittleFS.open("/preset_medium_res." + String((char)slot), "r");
     } else if (forVideoMode == 14) {
-        f = SPIFFS.open("/preset_vga_upscale." + String((char)slot), "r");
+        f = LittleFS.open("/preset_vga_upscale." + String((char)slot), "r");
     } else if (forVideoMode == 0) {
-        f = SPIFFS.open("/preset_unknown." + String((char)slot), "r");
+        f = LittleFS.open("/preset_unknown." + String((char)slot), "r");
     }
 
     if (!f) {
@@ -10453,7 +10465,7 @@ void savePresetToSPIFFS()
     Ascii8 slot = 0;
 
     // first figure out if the user has set a preferenced slot
-    f = SPIFFS.open("/preferencesv2.txt", "r");
+    f = LittleFS.open("/preferencesv2.txt", "r");
     if (f) {
         uint8_t result[3];
         result[0] = f.read(); // todo: move file cursor manually
@@ -10472,23 +10484,23 @@ void savePresetToSPIFFS()
     SerialM.println(String((char)slot));
 
     if (rto->videoStandardInput == 1) {
-        f = SPIFFS.open("/preset_ntsc." + String((char)slot), "w");
+        f = LittleFS.open("/preset_ntsc." + String((char)slot), "w");
     } else if (rto->videoStandardInput == 2) {
-        f = SPIFFS.open("/preset_pal." + String((char)slot), "w");
+        f = LittleFS.open("/preset_pal." + String((char)slot), "w");
     } else if (rto->videoStandardInput == 3) {
-        f = SPIFFS.open("/preset_ntsc_480p." + String((char)slot), "w");
+        f = LittleFS.open("/preset_ntsc_480p." + String((char)slot), "w");
     } else if (rto->videoStandardInput == 4) {
-        f = SPIFFS.open("/preset_pal_576p." + String((char)slot), "w");
+        f = LittleFS.open("/preset_pal_576p." + String((char)slot), "w");
     } else if (rto->videoStandardInput == 5) {
-        f = SPIFFS.open("/preset_ntsc_720p." + String((char)slot), "w");
+        f = LittleFS.open("/preset_ntsc_720p." + String((char)slot), "w");
     } else if (rto->videoStandardInput == 6) {
-        f = SPIFFS.open("/preset_ntsc_1080p." + String((char)slot), "w");
+        f = LittleFS.open("/preset_ntsc_1080p." + String((char)slot), "w");
     } else if (rto->videoStandardInput == 8) {
-        f = SPIFFS.open("/preset_medium_res." + String((char)slot), "w");
+        f = LittleFS.open("/preset_medium_res." + String((char)slot), "w");
     } else if (rto->videoStandardInput == 14) {
-        f = SPIFFS.open("/preset_vga_upscale." + String((char)slot), "w");
+        f = LittleFS.open("/preset_vga_upscale." + String((char)slot), "w");
     } else if (rto->videoStandardInput == 0) {
-        f = SPIFFS.open("/preset_unknown." + String((char)slot), "w");
+        f = LittleFS.open("/preset_unknown." + String((char)slot), "w");
     }
 
     if (!f) {
@@ -10565,7 +10577,7 @@ void savePresetToSPIFFS()
 
 void saveUserPrefs()
 {
-    File f = SPIFFS.open("/preferencesv2.txt", "w");
+    File f = LittleFS.open("/preferencesv2.txt", "w");
     if (!f) {
         SerialM.println(F("saveUserPrefs: open file failed"));
         return;
