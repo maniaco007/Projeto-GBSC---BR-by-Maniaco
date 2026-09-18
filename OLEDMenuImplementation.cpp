@@ -452,17 +452,11 @@ bool currentSettingHandler(OLEDMenuManager *manager, OLEDMenuItem *, OLEDMenuNav
 // the default screensaver) instead of the generic bouncing text. Falls
 // back to the default (returns false) for fixed-resolution presets or
 // icons that don't have an animation yet.
-bool presetScreenSaverHandler(OLEDDisplay *display)
+// Screensaver in "Icone" mode: cycles the active preset's icon animation
+// (if one exists yet) at a random position, same anti-burn-in behavior as
+// the default screensaver.
+static bool presetIconScreenSaver(OLEDDisplay *display)
 {
-    // Respect "Visor OLED: Exibicao" (uopt->oledPresetDisplayMode): only
-    // animate the preset's icon here when the user picked "Icone". In
-    // "Nome" mode this falls through to the default screensaver, since
-    // there's no equivalent animated-name treatment (yet) - otherwise the
-    // icon would keep showing during the screensaver regardless of the
-    // Nome/Icone choice, making the setting look like it does nothing.
-    if (uopt->oledPresetDisplayMode != 1) {
-        return false;
-    }
     const IconAnimation *anim = findIconAnimation(getActivePresetIconId());
     if (!anim || !anim->frameCount) {
         return false;
@@ -475,6 +469,39 @@ bool presetScreenSaverHandler(OLEDDisplay *display)
     int16_t y = maxY > 0 ? rand() % maxY : 0;
     display->drawXbm(x, y, anim->width, anim->height, anim->frames[frame]);
     return true;
+}
+
+// Screensaver in "Nome" mode: bounces the active preset's name around the
+// screen instead, same anti-burn-in random positioning.
+static bool presetNameScreenSaver(OLEDDisplay *display)
+{
+    char name[sizeof(SlotMeta::name)];
+    if (!getActivePresetName(name, sizeof(name))) {
+        return false;
+    }
+    display->setFont(URW_Gothic_L_Book_20);
+    display->setTextAlignment(TEXT_ALIGN_LEFT);
+    const int16_t textHeight = 24;
+    int16_t textWidth = (int16_t)display->getStringWidth(name, strlen(name));
+    int16_t maxX = OLED_MENU_WIDTH - textWidth;
+    int16_t maxY = OLED_MENU_HEIGHT - textHeight;
+    int16_t x = maxX > 0 ? rand() % maxX : 0;
+    int16_t y = maxY > 0 ? rand() % maxY : 0;
+    display->drawString(x, y, name);
+    return true;
+}
+
+// Respects "Visor OLED: Exibicao" (uopt->oledPresetDisplayMode): shows the
+// preset's icon animation or its name, matching whichever the idle screen
+// (currentSettingHandler) is also showing. Falls back to the default
+// bouncing-text screensaver (returns false) when there's no custom preset
+// active, or the icon has no animation yet.
+bool presetScreenSaverHandler(OLEDDisplay *display)
+{
+    if (uopt->oledPresetDisplayMode == 1) {
+        return presetIconScreenSaver(display);
+    }
+    return presetNameScreenSaver(display);
 }
 #if ENABLE_WIFI
 bool wifiMenuHandler(OLEDMenuManager *manager, OLEDMenuItem *item, OLEDMenuNav, bool)

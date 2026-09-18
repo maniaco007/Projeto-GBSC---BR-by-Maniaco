@@ -568,23 +568,35 @@ section[name="iconpicker"] {
 }
 
 .gbs-icon-picker {
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
   margin-bottom: 16px;
 }
 
 .gbs-icon-picker__item {
   align-items: center;
+  aspect-ratio: 1;
   display: flex;
-  flex-grow: 0;
-  height: 48px;
   justify-content: center;
-  width: 48px;
+  margin: 0;
+  min-height: 44px;
+  width: auto;
 }
 
 .gbs-icon-picker__item svg {
   fill: currentColor;
-  height: 26px;
-  width: 26px;
+  height: 60%;
+  width: 60%;
+}
+
+.gbs-icon-picker__actions {
+  gap: 4px;
+}
+
+.gbs-icon-picker__actions .gbs-button {
+  flex: 1 1 0;
+  text-align: center;
 }
 
 .gbs-modal__message {
@@ -2392,8 +2404,8 @@ section[name="iconpicker"] {
               <div class="gbs-icon">stadia_controller</div>
               <div>Escolha um ícone</div>
             </legend>
-            <div class="gbs-flex gbs-icon-picker" gbs-icon-picker-grid></div>
-            <div class="gbs-flex">
+            <div class="gbs-icon-picker" gbs-icon-picker-grid></div>
+            <div class="gbs-flex gbs-icon-picker__actions">
               <button gbs-icon-picker-cancel class="gbs-button gbs-button__control">
                 <div class="gbs-icon">close</div>
                 <div>CANCELAR</div>

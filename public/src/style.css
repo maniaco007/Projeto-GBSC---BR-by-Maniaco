@@ -561,23 +561,35 @@ section[name="iconpicker"] {
 }
 
 .gbs-icon-picker {
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
   margin-bottom: 16px;
 }
 
 .gbs-icon-picker__item {
   align-items: center;
+  aspect-ratio: 1;
   display: flex;
-  flex-grow: 0;
-  height: 48px;
   justify-content: center;
-  width: 48px;
+  margin: 0;
+  min-height: 44px;
+  width: auto;
 }
 
 .gbs-icon-picker__item svg {
   fill: currentColor;
-  height: 26px;
-  width: 26px;
+  height: 60%;
+  width: 60%;
+}
+
+.gbs-icon-picker__actions {
+  gap: 4px;
+}
+
+.gbs-icon-picker__actions .gbs-button {
+  flex: 1 1 0;
+  text-align: center;
 }
 
 .gbs-modal__message {
