@@ -3134,6 +3134,33 @@ const getSlotsHTML = () => {
 const setSlot = (slot) => {
     fetch(`/slot/set?slot=${slot}&${+new Date()}`);
 };
+// Slot buttons are generated once (fixed gbs-slot-id per storage index, see
+// getSlotsHTML()) and never recreated, so re-sorting means actually moving
+// the existing DOM nodes (appendChild on an attached element relocates it
+// instead of cloning it) rather than just a CSS "order" - a CSS-only
+// reorder wouldn't touch document order, and the "only show the first
+// Vazio" trick in style.css ([gbs-name="Empty"] ~ [gbs-name="Empty"]) relies
+// on document order to hide the other ~70 unused slots.
+const sortSlotButtonsAlphabetically = () => {
+    const container = GBSControl.ui.slotContainer;
+    if (!container) {
+        return;
+    }
+    const buttons = nodelistToArray(container.querySelectorAll('[gbs-role="slot"]'));
+    buttons.sort((a, b) => {
+        const nameA = a.getAttribute("gbs-name") || "";
+        const nameB = b.getAttribute("gbs-name") || "";
+        const emptyA = nameA === "Empty";
+        const emptyB = nameB === "Empty";
+        if (emptyA !== emptyB) {
+            // keep the (single, visible) "Vazio" placeholder last, not wherever
+            // "Empty" happens to sort alphabetically
+            return emptyA ? 1 : -1;
+        }
+        return nameA.localeCompare(nameB, "pt-BR", { sensitivity: "base" });
+    });
+    buttons.forEach((button) => container.appendChild(button));
+};
 const updateSlotNames = () => {
     for (let i = 0; i < GBSControl.maxSlots; i++) {
         const el = document.querySelector(`[gbs-slot-id="${i}"]`);
@@ -3144,6 +3171,7 @@ const updateSlotNames = () => {
             use.setAttribute("href", `#gbs-slot-icon-${iconId}`);
         }
     }
+    sortSlotButtonsAlphabetically();
     populateStartupPresetOptions();
 };
 let startupPresetValue = null;
@@ -3161,12 +3189,17 @@ const populateStartupPresetOptions = () => {
     while (select.options.length > 1) {
         select.remove(1);
     }
+    const namedSlots = [];
     for (let i = 0; i < GBSControl.maxSlots; i++) {
         const slot = GBSControl.structs.slots[i];
         const name = slot && slot.name ? slot.name.trim() : "";
         if (!name || name === "Empty") {
             continue;
         }
+        namedSlots.push({ index: i, name });
+    }
+    namedSlots.sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
+    for (const { index: i, name } of namedSlots) {
         const option = document.createElement("option");
         option.value = String(i + 1);
         option.textContent = name;

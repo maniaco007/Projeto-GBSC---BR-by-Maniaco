@@ -157,16 +157,29 @@ bool presetsCreationMenuHandler(OLEDMenuManager *manager, OLEDMenuItem *item, OL
     if (slotsBinaryFileRead) {
         slotsBinaryFileRead.read((byte *)&slotsObject, sizeof(slotsObject));
         slotsBinaryFileRead.close();
+
+        // List named slots alphabetically instead of storage/save order.
+        const SlotMeta *named[SLOTS_TOTAL];
+        int numNamed = 0;
         for (int i = 0; i < SLOTS_TOTAL; ++i) {
             const SlotMeta &slot = slotsObject.slot[i];
             if (strcmp(EMPTY_SLOT_NAME, slot.name) == 0 || !strlen(slot.name)) {
                 continue;
             }
+            named[numNamed++] = &slot;
+        }
+        qsort(named, numNamed, sizeof(named[0]), [](const void *a, const void *b) {
+            const SlotMeta *slotA = *(const SlotMeta *const *)a;
+            const SlotMeta *slotB = *(const SlotMeta *const *)b;
+            return strcasecmp(slotA->name, slotB->name);
+        });
+
+        for (int i = 0; i < numNamed; ++i) {
             curNumSlot++;
             if (curNumSlot > OLED_MENU_MAX_SUBITEMS_NUM) {
                 break;
             }
-            manager->registerItem(item, slot.slot, slot.name, presetSelectionMenuHandler, nullptr, TEXT_ALIGN_LEFT);
+            manager->registerItem(item, named[i]->slot, named[i]->name, presetSelectionMenuHandler, nullptr, TEXT_ALIGN_LEFT);
         }
     }
 

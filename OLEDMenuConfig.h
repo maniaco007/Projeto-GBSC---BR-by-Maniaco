@@ -14,7 +14,7 @@
 #define OLED_MENU_REFRESH_INTERVAL_IN_MS 50 // not precise
 #define OLED_MENU_SCREEN_SAVER_REFRESH_INTERVAL_IN_MS 5000 // not precise
 #define OLED_MENU_SCROLL_LEAD_IN_TIME_IN_MS 600 // milliseconds before items start to scroll after being selected
-#define OLED_MENU_SCREEN_SAVER_KICK_IN_SECONDS 180 // after "OLED_MENU_SCREEN_SAVE_KICK_IN_SECONDS" seconds, screen saver will show up until any key is pressed
+#define OLED_MENU_SCREEN_SAVER_KICK_IN_SECONDS 60 // after "OLED_MENU_SCREEN_SAVE_KICK_IN_SECONDS" seconds, screen saver will show up until any key is pressed
 #define OLED_MENU_OVER_DRAW 0 // if set to 0, the last menu item of a page will not be drawn at all if partially outside the screen, and you need to scroll down to see them
 #define OLED_MENU_RESET_ALWAYS_SCROLL_ON_SELECTION 0 // if set 1, scrolling items will reset to original position on selection
 #define OLED_MENU_WRAPPING_SPACE (OLED_MENU_WIDTH / 3)
