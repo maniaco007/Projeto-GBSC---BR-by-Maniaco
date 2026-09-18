@@ -11,6 +11,10 @@
 // same 1-byte-per-slot approach as SLOT_ICONS_FILE. 0 = no link, 1 =
 // RGB/RGBS, 2 = Componente (same encoding as uopt->inputSourceLock).
 #define SLOT_INPUT_FILE "/slot_input.bin"
+// Per-slot video source connector label, same 1-byte-per-slot approach.
+// 0 = not set (older preset, saved before this existed - shown as nothing),
+// 1 = SCART, 2 = VGA, 3 = Componente, 4 = RGBS.
+#define SLOT_CONNECTOR_FILE "/slot_conn.bin"
 typedef struct
 {
     char name[25];

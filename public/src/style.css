@@ -238,6 +238,14 @@ body {
   content: "Vazio";
 }
 
+.gbs-button__slot[gbs-conn]:not([gbs-conn=""])::after {
+  color: var(--color-primary);
+  content: attr(gbs-conn);
+  display: block;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
 .gbs-slot-icon {
   bottom: 6px;
   fill: var(--color-primary);
@@ -604,6 +612,28 @@ section[name="iconpicker"] {
 .gbs-icon-picker__actions .gbs-button {
   flex: 1 1 0;
   text-align: center;
+}
+
+.gbs-connector-picker__label {
+  color: var(--color-silver-chalice);
+  font-size: 13px;
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+.gbs-connector-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.gbs-connector-picker .gbs-connector-picker__item {
+  flex: none;
+  height: 44px;
+  margin: 0;
+  min-width: 0;
+  text-align: center;
+  width: auto;
 }
 
 .gbs-modal__message {

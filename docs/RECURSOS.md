@@ -54,7 +54,8 @@ A aba **Perfis** da webui guarda até 72 slots customizados (A-Z, a-z, 0-9...), 
 1. Ajusta a imagem do jeito que quer (filtros, scanlines, resolução etc) com o console conectado.
 2. Escolhe um slot vazio ("Vazio") ou um já usado (sobrescreve).
 3. Clica em **salvar perfil**, digita um nome (até 24 caracteres).
-4. Escolhe um ícone na tela **"Escolha um ícone"** (ou cancela pra manter o ícone atual/genérico).
+4. Escolhe a **origem de vídeo** (SCART, VGA, Componente ou RGBS) na grade logo abaixo do nome.
+5. Escolhe um ícone na tela **"Escolha um ícone"** (clique só seleciona; confirma no botão OK, ou cancela pra manter o ícone atual/genérico).
 
 **Carregar um perfil:** seleciona o slot na lista e clica em **carregar perfil**.
 
@@ -63,6 +64,14 @@ A aba **Perfis** da webui guarda até 72 slots customizados (A-Z, a-z, 0-9...), 
 **Perfis Padrão do Projeto:** botão "importar perfis padrão" que já vem com 5 presets prontos embarcados no firmware (SNES, Mega Drive, PS1, PS2, N64), pra não precisar configurar do zero.
 
 **Seletor de ícone:** grade de ícones (hoje 25 opções, id 0-24) que ficam salvos em `/slot_icons.bin` (1 byte por slot). Esse mesmo id é o que conecta o ícone ao **protetor de tela animado do OLED** (ver seção abaixo) — hoje só o ícone do GameCube (id 9) tem arte real de animação, os outros usam símbolos genéricos abstratos na webui e não têm animação no OLED ainda.
+
+**Origem de vídeo por preset:** escolha manual (não é detectada automaticamente — o chip só distingue "caminho RGB/RGBS" de "caminho Componente" a nível de registrador, não o conector físico) entre SCART, VGA, Componente ou RGBS, salva em `/slot_conn.bin` (1 byte por slot, 0 = não definido pra presets salvos antes dessa opção existir). Aparece no card do preset na lista, entre o nome e o ícone:
+
+```
+Super Nintendo
+SCART
+[ícone]
+```
 
 ## Menu OLED do Aparelho
 
@@ -114,7 +123,7 @@ Essa migração também foi a origem de um bug corrigido nesta rodada: um arquiv
 - [x] Infraestrutura de protetor de tela animado por preset (prova de conceito com GameCube)
 - [x] Indicador de limite de ganho ADC (número fica vermelho no limite ±40) e Perfil de Inicialização (força um slot específico ao ligar) — ideias do RetroTINK
 - [x] Link Perfil↔Entrada (preset lembra e força a entrada RGB/RGBS ou Componente usada) e aviso de mudança de formato no OLED por 3s — ideias do OSSC
-- [ ] **Ideia anotada, não implementada:** no card do preset, trocar o texto "Personalizado" por qual dos 4 conectores da GBSC (SCART/VGA/Componente/RGBS) foi usado — provavelmente precisa ser um rótulo manual escolhido ao salvar (igual o ícone), já que o TV5725 só distingue RGB-path vs Componente-path a nível de registrador, não o conector físico em si
+- [x] Origem de vídeo por preset (SCART/VGA/Componente/RGBS) escolhida ao salvar, mostrada no card do preset entre o nome e o ícone
 - [ ] **`feature-lab` ainda não foi consolidado em `ptbr-import`** — aguardando terminar de testar no aparelho real antes de mesclar
 - [ ] Faltam ícones/animações reais pros outros ~23 consoles (as imagens/gifs vão sendo trazidas aos poucos e cadastradas)
 - [ ] `custom_presets.h` (os 5 presets embarcados) ainda usa o esquema antigo de ids de ícone — precisa ser regerado quando o conjunto de ícones final estiver pronto

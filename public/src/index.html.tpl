@@ -1609,6 +1609,13 @@
                 maxlength="25"
               />
             </div>
+            <div class="gbs-connector-picker__label">Origem de vídeo</div>
+            <div class="gbs-connector-picker gbs-margin__bottom--16" gbs-prompt-connector-grid>
+              <button class="gbs-button gbs-button__control gbs-connector-picker__item" gbs-connector-value="1">SCART</button>
+              <button class="gbs-button gbs-button__control gbs-connector-picker__item" gbs-connector-value="2">VGA</button>
+              <button class="gbs-button gbs-button__control gbs-connector-picker__item" gbs-connector-value="3">Componente</button>
+              <button class="gbs-button gbs-button__control gbs-connector-picker__item" gbs-connector-value="4">RGBS</button>
+            </div>
             <div class="gbs-flex">
               <button gbs-prompt-cancel class="gbs-button gbs-button__control">
                 <div class="gbs-icon">close</div>

@@ -9863,6 +9863,26 @@ void startWebserver()
         }
     });
 
+    server.on("/bin/slot_conn.bin", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (ESP.getFreeHeap() > 10000) {
+            File connRead = LittleFS.open(SLOT_CONNECTOR_FILE, "r");
+            if (!connRead || connRead.size() != SLOTS_TOTAL) {
+                if (connRead) {
+                    connRead.close();
+                }
+                static uint8_t conns[SLOTS_TOTAL];
+                memset(conns, 0, sizeof(conns));
+                File connWrite = LittleFS.open(SLOT_CONNECTOR_FILE, "w");
+                connWrite.write(conns, SLOTS_TOTAL);
+                connWrite.close();
+            } else {
+                connRead.close();
+            }
+
+            request->send(LittleFS, SLOT_CONNECTOR_FILE, "application/octet-stream");
+        }
+    });
+
     server.on("/slot/set", HTTP_GET, [](AsyncWebServerRequest *request) {
         bool result = false;
 
@@ -9985,6 +10005,26 @@ void startWebserver()
                 inputsWrite.write(inputs, SLOTS_TOTAL);
                 inputsWrite.close();
 
+                // connector param (optional, defaults to 0 / not set):
+                // 1=SCART, 2=VGA, 3=Componente, 4=RGBS
+                static uint8_t connectors[SLOTS_TOTAL];
+                memset(connectors, 0, sizeof(connectors));
+                File connRead = LittleFS.open(SLOT_CONNECTOR_FILE, "r");
+                if (connRead && connRead.size() == SLOTS_TOTAL) {
+                    connRead.read(connectors, SLOTS_TOTAL);
+                }
+                if (connRead) {
+                    connRead.close();
+                }
+                if (params > 3) {
+                    AsyncWebParameter *slotConnParam = request->getParam(3);
+                    uint8_t connValue = lowByte(slotConnParam->value().toInt());
+                    connectors[slotIndex] = connValue <= 4 ? connValue : 0;
+                }
+                File connWrite = LittleFS.open(SLOT_CONNECTOR_FILE, "w");
+                connWrite.write(connectors, SLOTS_TOTAL);
+                connWrite.close();
+
                 result = true;
             }
         }
@@ -10040,6 +10080,16 @@ void startWebserver()
                     inputsFileRead.close();
                 }
 
+                static uint8_t connectors[SLOTS_TOTAL];
+                memset(connectors, 0, sizeof(connectors));
+                File connFileRead = LittleFS.open(SLOT_CONNECTOR_FILE, "r");
+                if (connFileRead && connFileRead.size() == SLOTS_TOTAL) {
+                    connFileRead.read(connectors, SLOTS_TOTAL);
+                }
+                if (connFileRead) {
+                    connFileRead.close();
+                }
+
                 // remove preset files
                 LittleFS.remove("/preset_ntsc." + String((char)slot));
                 LittleFS.remove("/preset_pal." + String((char)slot));
@@ -10079,6 +10129,7 @@ void startWebserver()
                     strncpy(slotsObject.slot[currentSlot + loopCount].name, slotsObject.slot[currentSlot + loopCount + 1].name, 25);
                     icons[currentSlot + loopCount] = icons[currentSlot + loopCount + 1];
                     inputs[currentSlot + loopCount] = inputs[currentSlot + loopCount + 1];
+                    connectors[currentSlot + loopCount] = connectors[currentSlot + loopCount + 1];
                     loopCount++;
                 }
 
@@ -10093,6 +10144,10 @@ void startWebserver()
                 File inputsFileWrite = LittleFS.open(SLOT_INPUT_FILE, "w");
                 inputsFileWrite.write(inputs, SLOTS_TOTAL);
                 inputsFileWrite.close();
+
+                File connFileWrite = LittleFS.open(SLOT_CONNECTOR_FILE, "w");
+                connFileWrite.write(connectors, SLOTS_TOTAL);
+                connFileWrite.close();
 
                 SerialM.println("Preset \"" + slotName + "\" removed");
                 result = true;

@@ -120,6 +120,7 @@ const GBSControl = {
   scanSSIDDone: false,
   serverIP: "",
   slotIcons: new Uint8Array(72),
+  slotConnectors: new Uint8Array(72),
   structs: null,
   timeOutWs: 0,
   ui: {
@@ -434,11 +435,13 @@ const savePreset = () => {
   const key = currentSlot.getAttribute("gbs-element-ref");
   const currentIndex = currentSlot.getAttribute("gbs-slot-id");
   const currentIconId = GBSControl.slotIcons[currentIndex] || 0;
+  const currentConnector = GBSControl.slotConnectors[currentIndex] || 1;
   gbsPrompt(
     "Nome do slot",
-    GBSControl.structs.slots[currentIndex].name || key
+    GBSControl.structs.slots[currentIndex].name || key,
+    currentConnector
   )
-    .then((currentName: string) => {
+    .then(({ name: currentName, connector }: { name: string; connector: number }) => {
       if (currentName && currentName.trim() !== "Empty") {
         currentSlot.setAttribute("gbs-name", currentName);
         gbsIconPrompt(currentIconId)
@@ -448,7 +451,7 @@ const savePreset = () => {
               `/slot/save?index=${currentIndex}&name=${currentName.substring(
                 0,
                 24
-              )}&icon=${iconId}&${+new Date()}`
+              )}&icon=${iconId}&conn=${connector}&${+new Date()}`
             ).then(() => {
               loadUser("4").then(() => {
                 setTimeout(() => {
@@ -869,6 +872,7 @@ const updateSlotNames = () => {
     if (use) {
       use.setAttribute("href", `#gbs-slot-icon-${iconId}`);
     }
+    el.setAttribute("gbs-conn", CONNECTOR_LABELS[GBSControl.slotConnectors[i]] || "");
   }
   sortSlotButtonsAlphabetically();
   populateStartupPresetOptions();
@@ -941,22 +945,35 @@ const fetchSlotNames = () => {
     fetch(`/bin/slot_icons.bin?${+new Date()}`)
       .then((response) => response.arrayBuffer())
       .catch(() => null),
-  ]).then(([arrayBuffer, iconsBuffer]: [ArrayBuffer, ArrayBuffer | null]) => {
-    if (
-      arrayBuffer.byteLength ===
-      StructParser.getSize(Structs, "slots") * GBSControl.maxSlots
-    ) {
-      GBSControl.structs = {
-        slots: StructParser.parseStructArray(arrayBuffer, Structs, "slots"),
-      };
-      GBSControl.slotIcons =
-        iconsBuffer && iconsBuffer.byteLength === GBSControl.maxSlots
-          ? new Uint8Array(iconsBuffer)
-          : new Uint8Array(GBSControl.maxSlots);
-      return true;
+    fetch(`/bin/slot_conn.bin?${+new Date()}`)
+      .then((response) => response.arrayBuffer())
+      .catch(() => null),
+  ]).then(
+    ([arrayBuffer, iconsBuffer, connBuffer]: [
+      ArrayBuffer,
+      ArrayBuffer | null,
+      ArrayBuffer | null
+    ]) => {
+      if (
+        arrayBuffer.byteLength ===
+        StructParser.getSize(Structs, "slots") * GBSControl.maxSlots
+      ) {
+        GBSControl.structs = {
+          slots: StructParser.parseStructArray(arrayBuffer, Structs, "slots"),
+        };
+        GBSControl.slotIcons =
+          iconsBuffer && iconsBuffer.byteLength === GBSControl.maxSlots
+            ? new Uint8Array(iconsBuffer)
+            : new Uint8Array(GBSControl.maxSlots);
+        GBSControl.slotConnectors =
+          connBuffer && connBuffer.byteLength === GBSControl.maxSlots
+            ? new Uint8Array(connBuffer)
+            : new Uint8Array(GBSControl.maxSlots);
+        return true;
+      }
+      return false;
     }
-    return false;
-  });
+  );
 };
 
 const fetchSlotNamesErrorRetry = () => {
@@ -1661,7 +1678,7 @@ const initGeneralListeners = () => {
     GBSControl.ui.prompt.setAttribute("hidden", "");
     const value = GBSControl.ui.promptInput.value;
     if (value !== undefined || value.length > 0) {
-      gbsPromptPromise.resolve(GBSControl.ui.promptInput.value);
+      gbsPromptPromise.resolve({ name: value, connector: selectedConnector });
     } else {
       gbsPromptPromise.reject();
     }
@@ -1677,7 +1694,7 @@ const initGeneralListeners = () => {
       GBSControl.ui.prompt.setAttribute("hidden", "");
       const value = GBSControl.ui.promptInput.value;
       if (value !== undefined || value.length > 0) {
-        gbsPromptPromise.resolve(GBSControl.ui.promptInput.value);
+        gbsPromptPromise.resolve({ name: value, connector: selectedConnector });
       } else {
         gbsPromptPromise.reject();
       }
@@ -1744,12 +1761,42 @@ const gbsPromptPromise = {
   reject: null,
 };
 
-const gbsPrompt = (text: string, defaultValue = "") => {
+let selectedConnector = 1; // SCART by default
+
+const applyConnectorSelection = () => {
+  const items = nodelistToArray<HTMLElement>(
+    document.querySelectorAll("[gbs-connector-value]")
+  );
+  items.forEach((item) => {
+    const value = parseInt(item.getAttribute("gbs-connector-value"), 10);
+    if (value === selectedConnector) {
+      item.setAttribute("active", "");
+    } else {
+      item.removeAttribute("active");
+    }
+  });
+};
+
+const initConnectorPicker = () => {
+  const items = nodelistToArray<HTMLElement>(
+    document.querySelectorAll("[gbs-connector-value]")
+  );
+  items.forEach((item) => {
+    item.addEventListener("click", () => {
+      selectedConnector = parseInt(item.getAttribute("gbs-connector-value"), 10);
+      applyConnectorSelection();
+    });
+  });
+};
+
+const gbsPrompt = (text: string, defaultValue = "", defaultConnector = 1) => {
   GBSControl.ui.promptContent.textContent = text;
   GBSControl.ui.prompt.removeAttribute("hidden");
   GBSControl.ui.promptInput.value = defaultValue;
+  selectedConnector = defaultConnector || 1;
+  applyConnectorSelection();
 
-  return new Promise<string>((resolve, reject) => {
+  return new Promise<{ name: string; connector: number }>((resolve, reject) => {
     gbsPromptPromise.resolve = resolve;
     gbsPromptPromise.reject = reject;
     GBSControl.ui.promptInput.focus();
@@ -1757,6 +1804,14 @@ const gbsPrompt = (text: string, defaultValue = "") => {
 };
 
 const SLOT_ICON_COUNT = 25;
+
+// 0 = not set (older preset, saved before this existed)
+const CONNECTOR_LABELS: { [key: number]: string } = {
+  1: "SCART",
+  2: "VGA",
+  3: "Componente",
+  4: "RGBS",
+};
 
 const SLOT_ICON_LABELS = [
   "Genérico",
@@ -1862,6 +1917,7 @@ const initUI = () => {
   initDeveloperMode();
   initHelp();
   initIconPicker();
+  initConnectorPicker();
   initAdcGainButtons();
   initInputLockButtons();
   initOledPresetDisplayButtons();
