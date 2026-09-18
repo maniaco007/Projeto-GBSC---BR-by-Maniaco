@@ -1125,6 +1125,43 @@ section[name="iconpicker"] {
                 <div>Ganho Auto</div>
               </button>
             </div>
+            <!-- prettier-ignore -->
+            <ul class="gbs-help">
+              <li>Ajuste fino por canal (R/G/B), útil quando a placa tem uma tendência de cor (ex.: excesso de vermelho) que o ganho combinado não corrige. Desativa o Ganho Automático.</li>
+            </ul>
+            <div class="gbs-flex gbs-margin__bottom--16">
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="r" gbs-adc-gain-delta="1">
+                <div class="gbs-icon">remove_circle_outline</div>
+                <div>R</div>
+              </button>
+              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-adc-gain-readout="r">—</div>
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="r" gbs-adc-gain-delta="-1">
+                <div class="gbs-icon">add_circle_outline</div>
+                <div>R</div>
+              </button>
+            </div>
+            <div class="gbs-flex gbs-margin__bottom--16">
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="g" gbs-adc-gain-delta="1">
+                <div class="gbs-icon">remove_circle_outline</div>
+                <div>G</div>
+              </button>
+              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-adc-gain-readout="g">—</div>
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="g" gbs-adc-gain-delta="-1">
+                <div class="gbs-icon">add_circle_outline</div>
+                <div>G</div>
+              </button>
+            </div>
+            <div class="gbs-flex gbs-margin__bottom--16">
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="b" gbs-adc-gain-delta="1">
+                <div class="gbs-icon">remove_circle_outline</div>
+                <div>B</div>
+              </button>
+              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-adc-gain-readout="b">—</div>
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="b" gbs-adc-gain-delta="-1">
+                <div class="gbs-icon">add_circle_outline</div>
+                <div>B</div>
+              </button>
+            </div>
           </fieldset>
           <fieldset class="gbs-fieldset gbs-controls">
             <legend class="gbs-fieldset__legend">
@@ -1536,7 +1573,19 @@ section[name="iconpicker"] {
                 <!-- prettier-ignore -->
                 <li>Scanlines só funcionam com fontes 240p, ou 480i com desentrelaçamento Bob.</li>
                 <li>O filtro de linha elimina artefatos de pixels quadriculados ao escalar acima de 480p, recomendado.</li>
+                <li>Realce de brilho das scanlines compensa a perda de brilho/contraste que o efeito causa (parecido com o brilho dos fósforos numa CRT de verdade). 0 = desativado.</li>
               </ul>
+              <div class="gbs-flex gbs-margin__bottom--16">
+                <button class="gbs-button gbs-button__control gbs-scanline-boost-btn" gbs-scanline-boost-delta="-4">
+                  <div class="gbs-icon">remove_circle_outline</div>
+                  <div>realce scanlines</div>
+                </button>
+                <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-scanline-boost-readout>—</div>
+                <button class="gbs-button gbs-button__control gbs-scanline-boost-btn" gbs-scanline-boost-delta="4">
+                  <div class="gbs-icon">add_circle_outline</div>
+                  <div>realce scanlines</div>
+                </button>
+              </div>
               <div class="gbs-flex">
                 <button
                   gbs-message="f"
@@ -1652,6 +1701,26 @@ section[name="iconpicker"] {
                   gbs-toggle-switch="wantOutputComponent"
                 >
                   toggle_off
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2">
+                  Entrada Manual
+                  <!-- prettier-ignore -->
+                  <ul class="gbs-help">
+                    <li>Por padrão a entrada (RGB/RGBS ou Componente) é detectada automaticamente. Force uma delas se você tem as duas fontes conectadas ao mesmo tempo e quer trocar manualmente.</li>
+                  </ul>
+                  <div class="gbs-flex">
+                    <button class="gbs-button gbs-button__control gbs-input-lock-btn" gbs-input-lock-value="0">
+                      <div>Automático</div>
+                    </button>
+                    <button class="gbs-button gbs-button__control gbs-input-lock-btn" gbs-input-lock-value="1">
+                      <div>RGB/RGBS</div>
+                    </button>
+                    <button class="gbs-button gbs-button__control gbs-input-lock-btn" gbs-input-lock-value="2">
+                      <div>Componente</div>
+                    </button>
+                  </div>
                 </td>
               </tr>
               <tr>
@@ -2088,6 +2157,27 @@ section[name="iconpicker"] {
               >
                 <div class="gbs-icon">settings_backup_restore offline_bolt</div>
                 <div>Restaurar Padrões</div>
+              </button>
+            </div>
+          </fieldset>
+          <fieldset class="gbs-fieldset">
+            <legend class="gbs-fieldset__legend gbs-fieldset__legend--help">
+              <div class="gbs-icon">bedtime</div>
+              <div>Timer de Desligar</div>
+            </legend>
+            <!-- prettier-ignore -->
+            <ul class="gbs-help">
+              <li>Desliga a saída de vídeo depois de N minutos sem nenhuma interação (botões, menu OLED, webui). Qualquer interação liga de volta. 0 = desativado.</li>
+            </ul>
+            <div class="gbs-flex">
+              <button class="gbs-button gbs-button__control gbs-screen-off-btn" gbs-screen-off-delta="-5">
+                <div class="gbs-icon">remove_circle_outline</div>
+                <div>minutos</div>
+              </button>
+              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-screen-off-readout>—</div>
+              <button class="gbs-button gbs-button__control gbs-screen-off-btn" gbs-screen-off-delta="5">
+                <div class="gbs-icon">add_circle_outline</div>
+                <div>minutos</div>
               </button>
             </div>
           </fieldset>
@@ -2691,6 +2781,131 @@ const deletePreset = () => {
         .catch(() => {
         gbsAlert("Erro ao apagar o preset").catch(() => { });
     });
+};
+const adcGainState = {
+    r: null,
+    g: null,
+    b: null,
+};
+const updateAdcGainReadouts = () => {
+    ["r", "g", "b"].forEach((ch) => {
+        const el = document.querySelector(`[gbs-adc-gain-readout="${ch}"]`);
+        if (el) {
+            el.textContent = adcGainState[ch] === null ? "—" : String(adcGainState[ch]);
+        }
+    });
+};
+const fetchAdcGain = () => {
+    return fetch(`/gbs/adc-gain?${+new Date()}`)
+        .then((r) => r.json())
+        .then((data) => {
+        adcGainState.r = data.r;
+        adcGainState.g = data.g;
+        adcGainState.b = data.b;
+        updateAdcGainReadouts();
+    })
+        .catch(() => { });
+};
+const adjustAdcGainChannel = (channel, delta) => {
+    const current = adcGainState[channel];
+    if (current === null) {
+        return;
+    }
+    const next = Math.max(0, Math.min(255, current + delta));
+    adcGainState[channel] = next;
+    updateAdcGainReadouts();
+    fetch(`/gbs/adc-gain-set?ch=${channel}&value=${next}&${+new Date()}`).catch(() => { });
+};
+const initAdcGainButtons = () => {
+    const buttons = nodelistToArray(document.querySelectorAll(".gbs-adc-gain-btn"));
+    buttons.forEach((button) => {
+        const channel = button.getAttribute("gbs-adc-gain-channel");
+        const delta = parseInt(button.getAttribute("gbs-adc-gain-delta") || "0", 10);
+        button.addEventListener("click", () => {
+            adjustAdcGainChannel(channel, delta);
+        });
+    });
+    fetchAdcGain();
+};
+const initInputLockButtons = () => {
+    const buttons = nodelistToArray(document.querySelectorAll(".gbs-input-lock-btn"));
+    const markActive = (value) => {
+        buttons.forEach((b) => {
+            if (b.getAttribute("gbs-input-lock-value") === value) {
+                b.setAttribute("active", "");
+            }
+            else {
+                b.removeAttribute("active");
+            }
+        });
+    };
+    buttons.forEach((button) => {
+        const value = button.getAttribute("gbs-input-lock-value");
+        button.addEventListener("click", () => {
+            markActive(value);
+            fetch(`/gbs/input-lock-set?value=${value}&${+new Date()}`).catch(() => { });
+        });
+    });
+    fetch(`/gbs/input-lock?${+new Date()}`)
+        .then((r) => r.json())
+        .then((value) => markActive(String(value)))
+        .catch(() => { });
+};
+let scanlineBoostValue = null;
+const updateScanlineBoostReadout = () => {
+    const el = document.querySelector("[gbs-scanline-boost-readout]");
+    if (el) {
+        el.textContent = scanlineBoostValue === null ? "—" : String(scanlineBoostValue);
+    }
+};
+const initScanlineBoostButtons = () => {
+    const buttons = nodelistToArray(document.querySelectorAll(".gbs-scanline-boost-btn"));
+    buttons.forEach((button) => {
+        const delta = parseInt(button.getAttribute("gbs-scanline-boost-delta") || "0", 10);
+        button.addEventListener("click", () => {
+            if (scanlineBoostValue === null) {
+                return;
+            }
+            scanlineBoostValue = Math.max(0, Math.min(0x40, scanlineBoostValue + delta));
+            updateScanlineBoostReadout();
+            fetch(`/gbs/scanline-boost-set?value=${scanlineBoostValue}&${+new Date()}`).catch(() => { });
+        });
+    });
+    fetch(`/gbs/scanline-boost?${+new Date()}`)
+        .then((r) => r.json())
+        .then((value) => {
+        scanlineBoostValue = value;
+        updateScanlineBoostReadout();
+    })
+        .catch(() => { });
+};
+let screenOffValue = null;
+const updateScreenOffReadout = () => {
+    const el = document.querySelector("[gbs-screen-off-readout]");
+    if (el) {
+        el.textContent = screenOffValue === null ? "—" : screenOffValue === 0 ? "desativado" : `${screenOffValue} min`;
+    }
+};
+const initScreenOffButtons = () => {
+    const buttons = nodelistToArray(document.querySelectorAll(".gbs-screen-off-btn"));
+    buttons.forEach((button) => {
+        const delta = parseInt(button.getAttribute("gbs-screen-off-delta") || "0", 10);
+        button.addEventListener("click", () => {
+            if (screenOffValue === null) {
+                return;
+            }
+            screenOffValue = Math.max(0, Math.min(240, screenOffValue + delta));
+            updateScreenOffReadout();
+            fetch(`/gbs/screen-off-timeout-set?value=${screenOffValue}&${+new Date()}`).catch(() => { });
+        });
+    });
+    fetch(`/gbs/screen-off-timeout?${+new Date()}`)
+        .then((r) => r.json())
+        .then((value) => {
+        screenOffValue = value;
+        updateScreenOffReadout();
+    })
+        .catch(() => { });
 };
 const doImportCustomPresets = () => {
     const button = document.querySelector(".gbs-custom-presets-button");
@@ -3508,6 +3723,10 @@ const initUI = () => {
     initDeveloperMode();
     initHelp();
     initIconPicker();
+    initAdcGainButtons();
+    initInputLockButtons();
+    initScanlineBoostButtons();
+    initScreenOffButtons();
 };
 const main = () => {
     const ip = location.hostname;
