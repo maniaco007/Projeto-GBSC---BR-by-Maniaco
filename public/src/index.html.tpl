@@ -1458,6 +1458,27 @@
           </fieldset>
           <fieldset class="gbs-fieldset">
             <legend class="gbs-fieldset__legend gbs-fieldset__legend--help">
+              <div class="gbs-icon">bedtime</div>
+              <div>Timer de Desligar</div>
+            </legend>
+            <!-- prettier-ignore -->
+            <ul class="gbs-help">
+              <li>Desliga a saída de vídeo depois de N minutos sem nenhuma interação (botões, menu OLED, webui). Qualquer interação liga de volta. 0 = desativado.</li>
+            </ul>
+            <div class="gbs-flex">
+              <button class="gbs-button gbs-button__control gbs-screen-off-btn" gbs-screen-off-delta="-5">
+                <div class="gbs-icon">remove_circle_outline</div>
+                <div>minutos</div>
+              </button>
+              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-screen-off-readout>—</div>
+              <button class="gbs-button gbs-button__control gbs-screen-off-btn" gbs-screen-off-delta="5">
+                <div class="gbs-icon">add_circle_outline</div>
+                <div>minutos</div>
+              </button>
+            </div>
+          </fieldset>
+          <fieldset class="gbs-fieldset">
+            <legend class="gbs-fieldset__legend gbs-fieldset__legend--help">
               <div class="gbs-icon">sd_card</div>
               <div>Cópia [para o mesmo aparelho]</div>
             </legend>

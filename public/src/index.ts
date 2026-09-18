@@ -628,6 +628,40 @@ const initScanlineBoostButtons = () => {
     .catch(() => {});
 };
 
+let screenOffValue: number = null;
+
+const updateScreenOffReadout = () => {
+  const el = document.querySelector("[gbs-screen-off-readout]");
+  if (el) {
+    el.textContent = screenOffValue === null ? "—" : screenOffValue === 0 ? "desativado" : `${screenOffValue} min`;
+  }
+};
+
+const initScreenOffButtons = () => {
+  const buttons = nodelistToArray<HTMLElement>(
+    document.querySelectorAll(".gbs-screen-off-btn")
+  );
+  buttons.forEach((button) => {
+    const delta = parseInt(button.getAttribute("gbs-screen-off-delta") || "0", 10);
+    button.addEventListener("click", () => {
+      if (screenOffValue === null) {
+        return;
+      }
+      screenOffValue = Math.max(0, Math.min(240, screenOffValue + delta));
+      updateScreenOffReadout();
+      fetch(`/gbs/screen-off-timeout-set?value=${screenOffValue}&${+new Date()}`).catch(() => {});
+    });
+  });
+
+  fetch(`/gbs/screen-off-timeout?${+new Date()}`)
+    .then((r) => r.json())
+    .then((value: number) => {
+      screenOffValue = value;
+      updateScreenOffReadout();
+    })
+    .catch(() => {});
+};
+
 const doImportCustomPresets = () => {
   const button = document.querySelector(
     ".gbs-custom-presets-button"
@@ -1654,6 +1688,7 @@ const initUI = () => {
   initAdcGainButtons();
   initInputLockButtons();
   initScanlineBoostButtons();
+  initScreenOffButtons();
 };
 
 const main = () => {

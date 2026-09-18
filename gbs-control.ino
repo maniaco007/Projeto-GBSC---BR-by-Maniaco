@@ -7887,6 +7887,8 @@ void loop()
     static unsigned long lastTimeSyncWatcher = millis();
     static unsigned long lastTimeSourceCheck = 500; // 500 to start right away (after setup it will be 2790ms when we get here)
     static unsigned long lastTimeInterruptClear = millis();
+    static unsigned long lastActivityMillis = millis();
+    static boolean screenOffActive = false;
 
 #if HAVE_BUTTONS
     static unsigned long lastButton = micros();
@@ -7935,6 +7937,16 @@ void loop()
             }
         }
         myLog("serial", serialCommand);
+
+        if (serialCommand != ' ') {
+            lastActivityMillis = millis();
+            if (screenOffActive) {
+                GBS::DAC_RGBS_PWDNZ::write(1);   // enable DAC
+                GBS::PAD_SYNC_OUT_ENZ::write(0); // enable sync out
+                screenOffActive = false;
+                SerialM.println(F("screen off timer: woken up"));
+            }
+        }
 
         switch (serialCommand) {
             case ' ':
@@ -8868,6 +8880,15 @@ void loop()
     //if (rto->videoIsFrozen && (rto->continousStableCounter >= 2)) {
     //    unfreezeVideo();
     //}
+
+    // sleep timer: blank output after N minutes without any user interaction
+    if (uopt->screenOffTimeoutMinutes > 0 && !screenOffActive &&
+        (millis() - lastActivityMillis) > ((unsigned long)uopt->screenOffTimeoutMinutes * 60000UL)) {
+        GBS::DAC_RGBS_PWDNZ::write(0);   // disable DAC
+        GBS::PAD_SYNC_OUT_ENZ::write(1); // disable sync out
+        screenOffActive = true;
+        SerialM.println(F("screen off timer: output disabled"));
+    }
 
     // syncwatcher polls SP status. when necessary, initiates adjustments or preset changes
     if (rto->sourceDisconnected == false && rto->syncWatcherEnabled == true && (millis() - lastTimeSyncWatcher) > 20) {
@@ -10113,6 +10134,24 @@ void startWebserver()
             int value = request->getParam("value")->value().toInt();
             if (value >= 0 && value <= 0x40) {
                 setScanlineBrightnessBoost((uint8_t)value);
+                saveUserPrefs();
+                result = true;
+            }
+        }
+        request->send(200, "application/json", result ? "true" : "false");
+    });
+
+    // Sleep timer: blanks video output after N minutes without user interaction. 0 = disabled.
+    server.on("/gbs/screen-off-timeout", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(200, "application/json", String(uopt->screenOffTimeoutMinutes));
+    });
+
+    server.on("/gbs/screen-off-timeout-set", HTTP_GET, [](AsyncWebServerRequest *request) {
+        bool result = false;
+        if (request->hasParam("value")) {
+            int value = request->getParam("value")->value().toInt();
+            if (value >= 0 && value <= 240) {
+                uopt->screenOffTimeoutMinutes = (uint8_t)value;
                 saveUserPrefs();
                 result = true;
             }
