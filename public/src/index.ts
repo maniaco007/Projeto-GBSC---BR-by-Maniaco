@@ -429,7 +429,7 @@ const savePreset = () => {
   const key = currentSlot.getAttribute("gbs-element-ref");
   const currentIndex = currentSlot.getAttribute("gbs-slot-id");
   gbsPrompt(
-    "Assign a slot name",
+    "Nome do slot",
     GBSControl.structs.slots[currentIndex].name || key
   )
     .then((currentName: string) => {
@@ -646,7 +646,7 @@ const getSlotPresetName = (presetID: number) => {
       return "1920x1080";
     case 0x06:
     case 0x016:
-      return "DOWNSCALE";
+      return "REDUZIR";
     case 0x04:
       return "720x480";
     case 0x14:
@@ -655,7 +655,7 @@ const getSlotPresetName = (presetID: number) => {
     case 0x22: // bypass 2
       return "BYPASS";
     default:
-      return "CUSTOM";
+      return "PERSONALIZADO";
   }
 };
 
@@ -899,7 +899,7 @@ const doRestore = (file: ArrayBuffer) => {
 
   if (headerCheck[0] !== 0x7b || headerCheck[1] !== 0x22) {
     backupInput.setAttribute("disabled", "");
-    gbsAlert("Invalid Backup File")
+    gbsAlert("Arquivo de cópia inválido")
       .then(
         () => {
           backupInput.removeAttribute("disabled");
@@ -954,7 +954,7 @@ const doRestore = (file: ArrayBuffer) => {
     GBSControl.ui.progressRestore.setAttribute("gbs-progress", ``);
     loadUser("a").then(() => {
       gbsAlert(
-        "Restarting GBSControl.\nPlease wait until wifi reconnects then click OK"
+        "Reiniciando o GBSControl.\nAguarde o wifi reconectar e clique OK"
       )
         .then(() => {
           window.location.reload();
@@ -1032,7 +1032,7 @@ const wifiConnect = () => {
     body: formData,
   }).then(() => {
     gbsAlert(
-      `GBSControl will restart and will connect to ${ssid}. Please wait some seconds then press OK`
+      `O GBSControl vai reiniciar e conectar em ${ssid}. Aguarde alguns segundos e clique OK`
     )
       .then(() => {
         window.location.href = "http://gbscontrol.local/";
@@ -1111,7 +1111,7 @@ const wifiSetAPMode = () => {
     body: formData,
   }).then(() => {
     gbsAlert(
-      "Switching to AP mode. Please connect to gbscontrol SSID and then click OK"
+      "Trocando para o modo Ponto de Acesso. Conecte-se ao SSID gbscontrol e clique OK"
     )
       .then(() => {
         window.location.href = "http://192.168.4.1";

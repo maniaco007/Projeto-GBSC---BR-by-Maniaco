@@ -38,7 +38,7 @@ menu_items = [
     {
         "tag": "OM_SCREEN_SAVER",
         "en-US": "Press Any Key",
-        "pt-BR": "Pressione",
+        "pt-BR": "GBS-C By Maniaco",
     },
     {
         "tag": "OM_RESOLUTION",
