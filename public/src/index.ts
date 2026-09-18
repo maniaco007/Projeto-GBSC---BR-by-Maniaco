@@ -238,7 +238,7 @@ const createWebSocket = () => {
 
   GBSControl.ws.onmessage = (message: any) => {
     clearTimeout(GBSControl.wsTimeout);
-    GBSControl.wsTimeout = setTimeout(timeOutWs, 2700);
+    GBSControl.wsTimeout = setTimeout(timeOutWs, 4000);
     GBSControl.isWsActive = true;
 
     const [
@@ -513,6 +513,26 @@ const deletePreset = () => {
     });
 };
 
+// Mirrors the gbs-click="repeat" behavior used elsewhere in the app: fires
+// once immediately, then repeats every 300ms while held, for both mouse and
+// touch. Used by the +/- controls added outside the gbs-message/gbs-click
+// declarative system (adc gain, scanline boost, screen-off timer).
+const bindRepeatClick = (button: HTMLElement, callback: () => void) => {
+  button.addEventListener(
+    !("ontouchstart" in window) ? "mousedown" : "touchstart",
+    () => {
+      callback();
+      clearInterval(button["__interval"]);
+      button["__interval"] = setInterval(callback, 300);
+    }
+  );
+  const stop = () => clearInterval(button["__interval"]);
+  button.addEventListener(!("ontouchstart" in window) ? "mouseup" : "touchend", stop);
+  button.addEventListener("mouseleave", stop);
+};
+
+const ADC_GAIN_OFFSET_LIMIT = 40;
+
 const adcGainState: { r: number; g: number; b: number } = {
   r: null,
   g: null,
@@ -545,7 +565,10 @@ const adjustAdcGainChannel = (channel: "r" | "g" | "b", delta: number) => {
   if (current === null) {
     return;
   }
-  const next = Math.max(0, Math.min(255, current + delta));
+  const next = Math.max(-ADC_GAIN_OFFSET_LIMIT, Math.min(ADC_GAIN_OFFSET_LIMIT, current + delta));
+  if (next === current) {
+    return;
+  }
   adcGainState[channel] = next;
   updateAdcGainReadouts();
   fetch(`/gbs/adc-gain-set?ch=${channel}&value=${next}&${+new Date()}`).catch(() => {});
@@ -558,9 +581,7 @@ const initAdcGainButtons = () => {
   buttons.forEach((button) => {
     const channel = button.getAttribute("gbs-adc-gain-channel") as "r" | "g" | "b";
     const delta = parseInt(button.getAttribute("gbs-adc-gain-delta") || "0", 10);
-    button.addEventListener("click", () => {
-      adjustAdcGainChannel(channel, delta);
-    });
+    bindRepeatClick(button, () => adjustAdcGainChannel(channel, delta));
   });
   fetchAdcGain();
 };
@@ -609,11 +630,15 @@ const initScanlineBoostButtons = () => {
   );
   buttons.forEach((button) => {
     const delta = parseInt(button.getAttribute("gbs-scanline-boost-delta") || "0", 10);
-    button.addEventListener("click", () => {
+    bindRepeatClick(button, () => {
       if (scanlineBoostValue === null) {
         return;
       }
-      scanlineBoostValue = Math.max(0, Math.min(0x40, scanlineBoostValue + delta));
+      const next = Math.max(0, Math.min(0x40, scanlineBoostValue + delta));
+      if (next === scanlineBoostValue) {
+        return;
+      }
+      scanlineBoostValue = next;
       updateScanlineBoostReadout();
       fetch(`/gbs/scanline-boost-set?value=${scanlineBoostValue}&${+new Date()}`).catch(() => {});
     });
@@ -643,11 +668,15 @@ const initScreenOffButtons = () => {
   );
   buttons.forEach((button) => {
     const delta = parseInt(button.getAttribute("gbs-screen-off-delta") || "0", 10);
-    button.addEventListener("click", () => {
+    bindRepeatClick(button, () => {
       if (screenOffValue === null) {
         return;
       }
-      screenOffValue = Math.max(0, Math.min(240, screenOffValue + delta));
+      const next = Math.max(0, Math.min(240, screenOffValue + delta));
+      if (next === screenOffValue) {
+        return;
+      }
+      screenOffValue = next;
       updateScreenOffReadout();
       fetch(`/gbs/screen-off-timeout-set?value=${screenOffValue}&${+new Date()}`).catch(() => {});
     });

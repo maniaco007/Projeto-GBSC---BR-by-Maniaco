@@ -220,6 +220,16 @@ struct adcOptions *adco = &adcopts;
 String slotIndexMap = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~()!*:,";
 
 char serialCommand;               // Serial / Web Server commands
+// Rapid-fire webui controls (press-and-hold +/- buttons) call
+// requestSaveUserPrefs() instead of saveUserPrefs() directly: writing to
+// flash on every single HTTP request (up to ~3/s while a button is held)
+// blocks the main loop long enough to skip websocket pings, which the
+// webui then reports as "disconnected". Deferring the actual flash write
+// until interaction pauses keeps the live register writes (and their
+// visual effect) instant, while collapsing many rapid changes into one write.
+boolean prefsSaveNeeded = false;
+unsigned long prefsSaveRequestedAt = 0;
+#define PREFS_SAVE_DEBOUNCE_MS 800
 char userCommand;               // Serial / Web Server commands
 static uint8_t lastSegment = 0xFF; // GBS segment for direct access
 //uint8_t globalDelay; // used for dev / debug
@@ -994,6 +1004,13 @@ void applyRGBPatches()
         applyComponentColorMixing();
     }
 }
+
+// The chip's documented default ADC gain (set by setAdcParametersGainAndOffset()
+// on every boot). Per-channel gain is exposed to the webui as a signed offset
+// from this value, clamped to +/- ADC_GAIN_OFFSET_LIMIT, so "0" always means
+// "factory default" regardless of the raw register's 0-255 range.
+#define ADC_GAIN_BASELINE 0x7B
+#define ADC_GAIN_OFFSET_LIMIT 40
 
 /// Write ADC gain registers, and save in adco->r_gain to properly transfer it
 /// across loading presets or passthrough.
@@ -8902,6 +8919,12 @@ void loop()
         SerialM.println(F("screen off timer: output disabled"));
     }
 
+    // flush any debounced preferences save (see requestSaveUserPrefs())
+    if (prefsSaveNeeded && (millis() - prefsSaveRequestedAt) > PREFS_SAVE_DEBOUNCE_MS) {
+        saveUserPrefs();
+        prefsSaveNeeded = false;
+    }
+
     // syncwatcher polls SP status. when necessary, initiates adjustments or preset changes
     if (rto->sourceDisconnected == false && rto->syncWatcherEnabled == true && (millis() - lastTimeSyncWatcher) > 20) {
         runSyncWatcher();
@@ -10109,9 +10132,18 @@ void startWebserver()
     // Per-channel ADC gain (independent R/G/B), for boards with a color tint
     // that the combined gain / auto gain can't correct.
     server.on("/gbs/adc-gain", HTTP_GET, [](AsyncWebServerRequest *request) {
-        String json = "{\"r\":" + String(adco->r_gain) +
-                       ",\"g\":" + String(adco->g_gain) +
-                       ",\"b\":" + String(adco->b_gain) +
+        // Report as a signed offset from the chip's documented default gain
+        // (0x7B), so the webui can show "0" at the factory default, negative
+        // values when dimmer, positive when brighter - reading the live
+        // register (not the adco-> cache, which can be stale/unset until the
+        // user or auto gain actually touches it).
+        int rOffset = (int)ADC_GAIN_BASELINE - (int)GBS::ADC_RGCTRL::read();
+        int gOffset = (int)ADC_GAIN_BASELINE - (int)GBS::ADC_GGCTRL::read();
+        int bOffset = (int)ADC_GAIN_BASELINE - (int)GBS::ADC_BGCTRL::read();
+        String json = "{\"r\":" + String(rOffset) +
+                       ",\"g\":" + String(gOffset) +
+                       ",\"b\":" + String(bOffset) +
+                       ",\"limit\":" + String(ADC_GAIN_OFFSET_LIMIT) +
                        ",\"auto\":" + String(uopt->enableAutoGain ? "true" : "false") + "}";
         request->send(200, "application/json", json);
     });
@@ -10127,7 +10159,7 @@ void startWebserver()
             int value = request->getParam("value")->value().toInt();
             if (value >= 0 && value <= 2) {
                 uopt->inputSourceLock = (uint8_t)value;
-                saveUserPrefs();
+                requestSaveUserPrefs();
                 result = true;
             }
         }
@@ -10146,7 +10178,7 @@ void startWebserver()
             int value = request->getParam("value")->value().toInt();
             if (value >= 0 && value <= 0x40) {
                 setScanlineBrightnessBoost((uint8_t)value);
-                saveUserPrefs();
+                requestSaveUserPrefs();
                 result = true;
             }
         }
@@ -10164,7 +10196,7 @@ void startWebserver()
             int value = request->getParam("value")->value().toInt();
             if (value >= 0 && value <= 240) {
                 uopt->screenOffTimeoutMinutes = (uint8_t)value;
-                saveUserPrefs();
+                requestSaveUserPrefs();
                 result = true;
             }
         }
@@ -10175,13 +10207,16 @@ void startWebserver()
         bool result = false;
         if (request->hasParam("ch") && request->hasParam("value")) {
             String ch = request->getParam("ch")->value();
-            int value = request->getParam("value")->value().toInt();
-            if (ch.length() == 1 && value >= 0 && value <= 255) {
+            int offset = request->getParam("value")->value().toInt();
+            if (ch.length() == 1 && offset >= -ADC_GAIN_OFFSET_LIMIT && offset <= ADC_GAIN_OFFSET_LIMIT) {
                 char channel = ch.charAt(0);
                 if (channel == 'r' || channel == 'g' || channel == 'b') {
+                    int target = (int)ADC_GAIN_BASELINE - offset;
+                    if (target < 0) target = 0;
+                    if (target > 255) target = 255;
                     uopt->enableAutoGain = 0;
-                    setAdcGainChannel(channel, (uint8_t)value);
-                    saveUserPrefs();
+                    setAdcGainChannel(channel, (uint8_t)target);
+                    requestSaveUserPrefs();
                     result = true;
                 }
             }
@@ -10573,6 +10608,11 @@ void savePresetToSPIFFS()
         SerialM.println(f.name());
         f.close();
     }
+}
+
+void requestSaveUserPrefs() {
+    prefsSaveNeeded = true;
+    prefsSaveRequestedAt = millis();
 }
 
 void saveUserPrefs()

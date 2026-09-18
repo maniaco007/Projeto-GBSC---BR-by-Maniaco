@@ -149,6 +149,14 @@ body {
   color: var(--color-primary);
 }
 
+.gbs-readout {
+  flex-grow: 0;
+  min-width: 56px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 400;
+}
+
 .gbs-button__secondary {
   border: 1px dashed rgba(var(--color-secondary-rgba), 0.3);
   color: rgba(var(--color-secondary-rgba), 0.7);

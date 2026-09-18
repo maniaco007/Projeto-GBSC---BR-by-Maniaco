@@ -426,34 +426,34 @@
               <li>Ajuste fino por canal (R/G/B), útil quando a placa tem uma tendência de cor (ex.: excesso de vermelho) que o ganho combinado não corrige. Desativa o Ganho Automático.</li>
             </ul>
             <div class="gbs-flex gbs-margin__bottom--16">
-              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="r" gbs-adc-gain-delta="1">
-                <div class="gbs-icon">remove_circle_outline</div>
-                <div>R</div>
-              </button>
-              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-adc-gain-readout="r">—</div>
               <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="r" gbs-adc-gain-delta="-1">
+                <div class="gbs-icon">remove_circle_outline</div>
+                <div>R</div>
+              </button>
+              <div class="gbs-button gbs-button__control gbs-readout" gbs-adc-gain-readout="r">—</div>
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="r" gbs-adc-gain-delta="1">
                 <div class="gbs-icon">add_circle_outline</div>
                 <div>R</div>
               </button>
             </div>
             <div class="gbs-flex gbs-margin__bottom--16">
-              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="g" gbs-adc-gain-delta="1">
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="g" gbs-adc-gain-delta="-1">
                 <div class="gbs-icon">remove_circle_outline</div>
                 <div>G</div>
               </button>
-              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-adc-gain-readout="g">—</div>
-              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="g" gbs-adc-gain-delta="-1">
+              <div class="gbs-button gbs-button__control gbs-readout" gbs-adc-gain-readout="g">—</div>
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="g" gbs-adc-gain-delta="1">
                 <div class="gbs-icon">add_circle_outline</div>
                 <div>G</div>
               </button>
             </div>
             <div class="gbs-flex gbs-margin__bottom--16">
-              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="b" gbs-adc-gain-delta="1">
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="b" gbs-adc-gain-delta="-1">
                 <div class="gbs-icon">remove_circle_outline</div>
                 <div>B</div>
               </button>
-              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-adc-gain-readout="b">—</div>
-              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="b" gbs-adc-gain-delta="-1">
+              <div class="gbs-button gbs-button__control gbs-readout" gbs-adc-gain-readout="b">—</div>
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="b" gbs-adc-gain-delta="1">
                 <div class="gbs-icon">add_circle_outline</div>
                 <div>B</div>
               </button>
@@ -876,7 +876,7 @@
                   <div class="gbs-icon">remove_circle_outline</div>
                   <div>realce scanlines</div>
                 </button>
-                <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-scanline-boost-readout>—</div>
+                <div class="gbs-button gbs-button__control gbs-readout" gbs-scanline-boost-readout>—</div>
                 <button class="gbs-button gbs-button__control gbs-scanline-boost-btn" gbs-scanline-boost-delta="4">
                   <div class="gbs-icon">add_circle_outline</div>
                   <div>realce scanlines</div>
@@ -1470,7 +1470,7 @@
                 <div class="gbs-icon">remove_circle_outline</div>
                 <div>minutos</div>
               </button>
-              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-screen-off-readout>—</div>
+              <div class="gbs-button gbs-button__control gbs-readout" gbs-screen-off-readout>—</div>
               <button class="gbs-button gbs-button__control gbs-screen-off-btn" gbs-screen-off-delta="5">
                 <div class="gbs-icon">add_circle_outline</div>
                 <div>minutos</div>

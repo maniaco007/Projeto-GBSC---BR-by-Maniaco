@@ -156,6 +156,14 @@ body {
   color: var(--color-primary);
 }
 
+.gbs-readout {
+  flex-grow: 0;
+  min-width: 56px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 400;
+}
+
 .gbs-button__secondary {
   border: 1px dashed rgba(var(--color-secondary-rgba), 0.3);
   color: rgba(var(--color-secondary-rgba), 0.7);
@@ -1130,34 +1138,34 @@ section[name="iconpicker"] {
               <li>Ajuste fino por canal (R/G/B), útil quando a placa tem uma tendência de cor (ex.: excesso de vermelho) que o ganho combinado não corrige. Desativa o Ganho Automático.</li>
             </ul>
             <div class="gbs-flex gbs-margin__bottom--16">
-              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="r" gbs-adc-gain-delta="1">
-                <div class="gbs-icon">remove_circle_outline</div>
-                <div>R</div>
-              </button>
-              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-adc-gain-readout="r">—</div>
               <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="r" gbs-adc-gain-delta="-1">
+                <div class="gbs-icon">remove_circle_outline</div>
+                <div>R</div>
+              </button>
+              <div class="gbs-button gbs-button__control gbs-readout" gbs-adc-gain-readout="r">—</div>
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="r" gbs-adc-gain-delta="1">
                 <div class="gbs-icon">add_circle_outline</div>
                 <div>R</div>
               </button>
             </div>
             <div class="gbs-flex gbs-margin__bottom--16">
-              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="g" gbs-adc-gain-delta="1">
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="g" gbs-adc-gain-delta="-1">
                 <div class="gbs-icon">remove_circle_outline</div>
                 <div>G</div>
               </button>
-              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-adc-gain-readout="g">—</div>
-              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="g" gbs-adc-gain-delta="-1">
+              <div class="gbs-button gbs-button__control gbs-readout" gbs-adc-gain-readout="g">—</div>
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="g" gbs-adc-gain-delta="1">
                 <div class="gbs-icon">add_circle_outline</div>
                 <div>G</div>
               </button>
             </div>
             <div class="gbs-flex gbs-margin__bottom--16">
-              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="b" gbs-adc-gain-delta="1">
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="b" gbs-adc-gain-delta="-1">
                 <div class="gbs-icon">remove_circle_outline</div>
                 <div>B</div>
               </button>
-              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-adc-gain-readout="b">—</div>
-              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="b" gbs-adc-gain-delta="-1">
+              <div class="gbs-button gbs-button__control gbs-readout" gbs-adc-gain-readout="b">—</div>
+              <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="b" gbs-adc-gain-delta="1">
                 <div class="gbs-icon">add_circle_outline</div>
                 <div>B</div>
               </button>
@@ -1580,7 +1588,7 @@ section[name="iconpicker"] {
                   <div class="gbs-icon">remove_circle_outline</div>
                   <div>realce scanlines</div>
                 </button>
-                <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-scanline-boost-readout>—</div>
+                <div class="gbs-button gbs-button__control gbs-readout" gbs-scanline-boost-readout>—</div>
                 <button class="gbs-button gbs-button__control gbs-scanline-boost-btn" gbs-scanline-boost-delta="4">
                   <div class="gbs-icon">add_circle_outline</div>
                   <div>realce scanlines</div>
@@ -2174,7 +2182,7 @@ section[name="iconpicker"] {
                 <div class="gbs-icon">remove_circle_outline</div>
                 <div>minutos</div>
               </button>
-              <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-screen-off-readout>—</div>
+              <div class="gbs-button gbs-button__control gbs-readout" gbs-screen-off-readout>—</div>
               <button class="gbs-button gbs-button__control gbs-screen-off-btn" gbs-screen-off-delta="5">
                 <div class="gbs-icon">add_circle_outline</div>
                 <div>minutos</div>
@@ -2560,7 +2568,7 @@ const createWebSocket = () => {
     };
     GBSControl.ws.onmessage = (message) => {
         clearTimeout(GBSControl.wsTimeout);
-        GBSControl.wsTimeout = setTimeout(timeOutWs, 2700);
+        GBSControl.wsTimeout = setTimeout(timeOutWs, 4000);
         GBSControl.isWsActive = true;
         const [messageDataAt0, messageDataAt1, messageDataAt2, messageDataAt3, messageDataAt4, messageDataAt5,] = message.data;
         if (messageDataAt0 != "#") {
@@ -2782,6 +2790,21 @@ const deletePreset = () => {
         gbsAlert("Erro ao apagar o preset").catch(() => { });
     });
 };
+// Mirrors the gbs-click="repeat" behavior used elsewhere in the app: fires
+// once immediately, then repeats every 300ms while held, for both mouse and
+// touch. Used by the +/- controls added outside the gbs-message/gbs-click
+// declarative system (adc gain, scanline boost, screen-off timer).
+const bindRepeatClick = (button, callback) => {
+    button.addEventListener(!("ontouchstart" in window) ? "mousedown" : "touchstart", () => {
+        callback();
+        clearInterval(button["__interval"]);
+        button["__interval"] = setInterval(callback, 300);
+    });
+    const stop = () => clearInterval(button["__interval"]);
+    button.addEventListener(!("ontouchstart" in window) ? "mouseup" : "touchend", stop);
+    button.addEventListener("mouseleave", stop);
+};
+const ADC_GAIN_OFFSET_LIMIT = 40;
 const adcGainState = {
     r: null,
     g: null,
@@ -2811,7 +2834,10 @@ const adjustAdcGainChannel = (channel, delta) => {
     if (current === null) {
         return;
     }
-    const next = Math.max(0, Math.min(255, current + delta));
+    const next = Math.max(-ADC_GAIN_OFFSET_LIMIT, Math.min(ADC_GAIN_OFFSET_LIMIT, current + delta));
+    if (next === current) {
+        return;
+    }
     adcGainState[channel] = next;
     updateAdcGainReadouts();
     fetch(`/gbs/adc-gain-set?ch=${channel}&value=${next}&${+new Date()}`).catch(() => { });
@@ -2821,9 +2847,7 @@ const initAdcGainButtons = () => {
     buttons.forEach((button) => {
         const channel = button.getAttribute("gbs-adc-gain-channel");
         const delta = parseInt(button.getAttribute("gbs-adc-gain-delta") || "0", 10);
-        button.addEventListener("click", () => {
-            adjustAdcGainChannel(channel, delta);
-        });
+        bindRepeatClick(button, () => adjustAdcGainChannel(channel, delta));
     });
     fetchAdcGain();
 };
@@ -2862,11 +2886,15 @@ const initScanlineBoostButtons = () => {
     const buttons = nodelistToArray(document.querySelectorAll(".gbs-scanline-boost-btn"));
     buttons.forEach((button) => {
         const delta = parseInt(button.getAttribute("gbs-scanline-boost-delta") || "0", 10);
-        button.addEventListener("click", () => {
+        bindRepeatClick(button, () => {
             if (scanlineBoostValue === null) {
                 return;
             }
-            scanlineBoostValue = Math.max(0, Math.min(0x40, scanlineBoostValue + delta));
+            const next = Math.max(0, Math.min(0x40, scanlineBoostValue + delta));
+            if (next === scanlineBoostValue) {
+                return;
+            }
+            scanlineBoostValue = next;
             updateScanlineBoostReadout();
             fetch(`/gbs/scanline-boost-set?value=${scanlineBoostValue}&${+new Date()}`).catch(() => { });
         });
@@ -2890,11 +2918,15 @@ const initScreenOffButtons = () => {
     const buttons = nodelistToArray(document.querySelectorAll(".gbs-screen-off-btn"));
     buttons.forEach((button) => {
         const delta = parseInt(button.getAttribute("gbs-screen-off-delta") || "0", 10);
-        button.addEventListener("click", () => {
+        bindRepeatClick(button, () => {
             if (screenOffValue === null) {
                 return;
             }
-            screenOffValue = Math.max(0, Math.min(240, screenOffValue + delta));
+            const next = Math.max(0, Math.min(240, screenOffValue + delta));
+            if (next === screenOffValue) {
+                return;
+            }
+            screenOffValue = next;
             updateScreenOffReadout();
             fetch(`/gbs/screen-off-timeout-set?value=${screenOffValue}&${+new Date()}`).catch(() => { });
         });
