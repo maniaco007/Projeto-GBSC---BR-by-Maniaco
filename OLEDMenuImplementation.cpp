@@ -479,12 +479,44 @@ static bool presetNameScreenSaver(OLEDDisplay *display)
     if (!getActivePresetName(name, sizeof(name))) {
         return false;
     }
-    display->setFont(URW_Gothic_L_Book_20);
     display->setTextAlignment(TEXT_ALIGN_LEFT);
-    const int16_t textHeight = 24;
-    int16_t textWidth = (int16_t)display->getStringWidth(name, strlen(name));
+
+    // Try progressively smaller fonts until the whole name fits on screen,
+    // instead of always using the biggest one and letting long names (e.g.
+    // "Super Nintendo") get clipped on the right edge.
+    struct FontOption
+    {
+        const uint8_t *font;
+        int16_t height;
+    };
+    static const FontOption fontOptions[] = {
+        {URW_Gothic_L_Book_20, 25},
+        {URW_Gothic_L_Book_14, 18},
+        {DejaVu_Sans_Mono_12, 15},
+        {DejaVu_Sans_Mono_10, 13},
+    };
+    const int fontOptionsCount = sizeof(fontOptions) / sizeof(fontOptions[0]);
+    size_t nameLen = strlen(name);
+    const uint8_t *chosenFont = fontOptions[fontOptionsCount - 1].font;
+    int16_t chosenHeight = fontOptions[fontOptionsCount - 1].height;
+    int16_t textWidth = 0;
+    for (int i = 0; i < fontOptionsCount; ++i) {
+        display->setFont(fontOptions[i].font);
+        int16_t width = (int16_t)display->getStringWidth(name, nameLen);
+        chosenFont = fontOptions[i].font;
+        chosenHeight = fontOptions[i].height;
+        textWidth = width;
+        if (width <= OLED_MENU_WIDTH) {
+            break;
+        }
+        // else: doesn't fit yet, try the next (smaller) font; if this was
+        // the last/smallest option, textWidth stays as its (still too
+        // wide) measurement and the name gets clipped as a last resort.
+    }
+
+    display->setFont(chosenFont);
     int16_t maxX = OLED_MENU_WIDTH - textWidth;
-    int16_t maxY = OLED_MENU_HEIGHT - textHeight;
+    int16_t maxY = OLED_MENU_HEIGHT - chosenHeight;
     int16_t x = maxX > 0 ? rand() % maxX : 0;
     int16_t y = maxY > 0 ? rand() % maxY : 0;
     display->drawString(x, y, name);
