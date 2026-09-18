@@ -3,6 +3,10 @@
 #define SLOTS_FILE "/slots.bin" // the file where to store slots metadata
 #define SLOTS_TOTAL 72          // max number of slots
 #define EMPTY_SLOT_NAME "Empty                   "
+// Per-slot console icon, kept in its own file (1 byte per slot) instead of
+// growing SlotMeta, so existing slots.bin dumps on already-flashed devices
+// keep working unmodified. 0 = no icon / generic.
+#define SLOT_ICONS_FILE "/slot_icons.bin"
 typedef struct
 {
     char name[25];

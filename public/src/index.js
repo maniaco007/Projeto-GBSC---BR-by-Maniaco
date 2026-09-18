@@ -96,6 +96,7 @@ const GBSControl = {
     queuedText: "",
     scanSSIDDone: false,
     serverIP: "",
+    slotIcons: new Uint8Array(72),
     structs: null,
     timeOutWs: 0,
     ui: {
@@ -131,6 +132,9 @@ const GBSControl = {
         promptCancel: null,
         promptContent: null,
         promptInput: null,
+        iconPicker: null,
+        iconPickerGrid: null,
+        iconPickerCancel: null,
     },
     updateTerminalTimer: 0,
     webSocketServerUrl: "",
@@ -354,19 +358,24 @@ const savePreset = () => {
     }
     const key = currentSlot.getAttribute("gbs-element-ref");
     const currentIndex = currentSlot.getAttribute("gbs-slot-id");
+    const currentIconId = GBSControl.slotIcons[currentIndex] || 0;
     gbsPrompt("Nome do slot", GBSControl.structs.slots[currentIndex].name || key)
         .then((currentName) => {
         if (currentName && currentName.trim() !== "Empty") {
             currentSlot.setAttribute("gbs-name", currentName);
-            fetch(`/slot/save?index=${currentIndex}&name=${currentName.substring(0, 24)}&${+new Date()}`).then(() => {
-                loadUser("4").then(() => {
-                    setTimeout(() => {
-                        fetchSlotNames().then((success) => {
-                            if (success) {
-                                updateSlotNames();
-                            }
-                        });
-                    }, 500);
+            gbsIconPrompt(currentIconId)
+                .catch(() => currentIconId)
+                .then((iconId) => {
+                fetch(`/slot/save?index=${currentIndex}&name=${currentName.substring(0, 24)}&icon=${iconId}&${+new Date()}`).then(() => {
+                    loadUser("4").then(() => {
+                        setTimeout(() => {
+                            fetchSlotNames().then((success) => {
+                                if (success) {
+                                    updateSlotNames();
+                                }
+                            });
+                        }, 500);
+                    });
                 });
             });
         }
@@ -495,10 +504,9 @@ const getSlotsHTML = () => {
     gbs-message-type="setSlot"
     gbs-click="normal"
     gbs-element-ref="slot-${chr}"
-    gbs-meta="1024&#xa;x768"
     gbs-role="slot"
     gbs-name="slot-${idx}"
-  ></button>`;
+  ><svg class="gbs-slot-icon"><use gbs-icon-use href="#gbs-slot-icon-0"></use></svg></button>`;
     }).join('');
 };
 const setSlot = (slot) => {
@@ -508,50 +516,33 @@ const updateSlotNames = () => {
     for (let i = 0; i < GBSControl.maxSlots; i++) {
         const el = document.querySelector(`[gbs-slot-id="${i}"]`);
         el.setAttribute("gbs-name", GBSControl.structs.slots[i].name);
-        el.setAttribute("gbs-meta", getSlotPresetName(parseInt(GBSControl.structs.slots[i].presetID, 10)));
+        const iconId = GBSControl.slotIcons[i] || 0;
+        const use = el.querySelector("[gbs-icon-use]");
+        if (use) {
+            use.setAttribute("href", `#gbs-slot-icon-${iconId}`);
+        }
     }
 };
 const fetchSlotNames = () => {
-    return fetch(`/bin/slots.bin?${+new Date()}`)
-        .then((response) => response.arrayBuffer())
-        .then((arrayBuffer) => {
+    return Promise.all([
+        fetch(`/bin/slots.bin?${+new Date()}`).then((response) => response.arrayBuffer()),
+        fetch(`/bin/slot_icons.bin?${+new Date()}`)
+            .then((response) => response.arrayBuffer())
+            .catch(() => null),
+    ]).then(([arrayBuffer, iconsBuffer]) => {
         if (arrayBuffer.byteLength ===
             StructParser.getSize(Structs, "slots") * GBSControl.maxSlots) {
             GBSControl.structs = {
                 slots: StructParser.parseStructArray(arrayBuffer, Structs, "slots"),
             };
+            GBSControl.slotIcons =
+                iconsBuffer && iconsBuffer.byteLength === GBSControl.maxSlots
+                    ? new Uint8Array(iconsBuffer)
+                    : new Uint8Array(GBSControl.maxSlots);
             return true;
         }
         return false;
     });
-};
-const getSlotPresetName = (presetID) => {
-    switch (presetID) {
-        case 0x01:
-        case 0x011:
-            return "1280x960";
-        case 0x02:
-        case 0x012:
-            return "1280x1024";
-        case 0x03:
-        case 0x013:
-            return "1280x720";
-        case 0x05:
-        case 0x015:
-            return "1920x1080";
-        case 0x06:
-        case 0x016:
-            return "REDUZIR";
-        case 0x04:
-            return "720x480";
-        case 0x14:
-            return "768x576";
-        case 0x21: // bypass 1
-        case 0x22: // bypass 2
-            return "BYPASS";
-        default:
-            return "PERSONALIZADO";
-    }
 };
 const fetchSlotNamesErrorRetry = () => {
     setTimeout(fetchSlotNamesAndInit, 1000);
@@ -1046,6 +1037,9 @@ const initUIElements = () => {
         promptCancel: document.querySelector("[gbs-prompt-cancel]"),
         promptContent: document.querySelector("[gbs-prompt-content]"),
         promptInput: document.querySelector('[gbs-input="prompt-input"]'),
+        iconPicker: document.querySelector('section[name="iconpicker"]'),
+        iconPickerGrid: document.querySelector("[gbs-icon-picker-grid]"),
+        iconPickerCancel: document.querySelector("[gbs-icon-picker-cancel]"),
     };
 };
 const initGeneralListeners = () => {
@@ -1163,6 +1157,76 @@ const gbsPrompt = (text, defaultValue = "") => {
         GBSControl.ui.promptInput.focus();
     });
 };
+const SLOT_ICON_COUNT = 25;
+const SLOT_ICON_LABELS = [
+    "Genérico",
+    "Zeebo",
+    "Philips Odyssey",
+    "Telejogo",
+    "Atari Video Pinball",
+    "PS2",
+    "Xbox Classic",
+    "Nintendo Wii",
+    "Sega Master System",
+    "GameCube",
+    "Dreamcast",
+    "Mega Drive",
+    "Sega CD",
+    "Sega Saturn",
+    "Nintendo 64",
+    "PS1",
+    "Neo Geo CD",
+    "Super Nintendo",
+    "Atari Jaguar",
+    "Amiga CD32",
+    "Sharp Twin Famicom",
+    "NEC Turbo Duo",
+    "Panasonic 3DO",
+    "Atari 2600",
+    "Philips CD-i",
+];
+const gbsIconPromptPromise = {
+    resolve: null,
+    reject: null,
+};
+const gbsIconPrompt = (currentIconId = 0) => {
+    GBSControl.ui.iconPicker.removeAttribute("hidden");
+    const items = nodelistToArray(GBSControl.ui.iconPickerGrid.querySelectorAll("[gbs-icon-picker-id]"));
+    items.forEach((item) => {
+        const id = parseInt(item.getAttribute("gbs-icon-picker-id"), 10);
+        if (id === currentIconId) {
+            item.setAttribute("active", "");
+        }
+        else {
+            item.removeAttribute("active");
+        }
+    });
+    return new Promise((resolve, reject) => {
+        gbsIconPromptPromise.resolve = resolve;
+        gbsIconPromptPromise.reject = reject;
+    });
+};
+const initIconPicker = () => {
+    for (let i = 0; i < SLOT_ICON_COUNT; i++) {
+        const item = document.createElement("button");
+        item.className = "gbs-button gbs-icon-picker__item";
+        item.setAttribute("gbs-icon-picker-id", String(i));
+        item.innerHTML = `<svg><use href="#gbs-slot-icon-${i}"></use></svg>`;
+        item.addEventListener("click", () => {
+            GBSControl.ui.iconPicker.setAttribute("hidden", "");
+            if (gbsIconPromptPromise.resolve) {
+                gbsIconPromptPromise.resolve(i);
+            }
+        });
+        GBSControl.ui.iconPickerGrid.appendChild(item);
+    }
+    GBSControl.ui.iconPickerCancel.addEventListener("click", () => {
+        GBSControl.ui.iconPicker.setAttribute("hidden", "");
+        if (gbsIconPromptPromise.reject) {
+            gbsIconPromptPromise.reject();
+        }
+    });
+};
 const initUI = () => {
     updateCustomSlotFilters();
     initGeneralListeners();
@@ -1176,6 +1240,7 @@ const initUI = () => {
     initUnloadListener();
     initDeveloperMode();
     initHelp();
+    initIconPicker();
 };
 const main = () => {
     const ip = location.hostname;

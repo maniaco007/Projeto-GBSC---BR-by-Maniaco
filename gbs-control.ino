@@ -9673,6 +9673,25 @@ void startWebserver()
         }
     });
 
+    server.on("/bin/slot_icons.bin", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (ESP.getFreeHeap() > 10000) {
+            File iconsRead = SPIFFS.open(SLOT_ICONS_FILE, "r");
+            if (!iconsRead || iconsRead.size() != SLOTS_TOTAL) {
+                if (iconsRead) {
+                    iconsRead.close();
+                }
+                uint8_t icons[SLOTS_TOTAL] = {0};
+                File iconsWrite = SPIFFS.open(SLOT_ICONS_FILE, "w");
+                iconsWrite.write(icons, SLOTS_TOTAL);
+                iconsWrite.close();
+            } else {
+                iconsRead.close();
+            }
+
+            request->send(SPIFFS, SLOT_ICONS_FILE, "application/octet-stream");
+        }
+    });
+
     server.on("/slot/set", HTTP_GET, [](AsyncWebServerRequest *request) {
         bool result = false;
 
@@ -9754,6 +9773,23 @@ void startWebserver()
                 slotsBinaryOutputFile.write((byte *)&slotsObject, sizeof(slotsObject));
                 slotsBinaryOutputFile.close();
 
+                // icon param (optional, defaults to 0 / generic)
+                uint8_t icons[SLOTS_TOTAL] = {0};
+                File iconsRead = SPIFFS.open(SLOT_ICONS_FILE, "r");
+                if (iconsRead && iconsRead.size() == SLOTS_TOTAL) {
+                    iconsRead.read(icons, SLOTS_TOTAL);
+                }
+                if (iconsRead) {
+                    iconsRead.close();
+                }
+                if (params > 2) {
+                    AsyncWebParameter *slotIconParam = request->getParam(2);
+                    icons[slotIndex] = lowByte(slotIconParam->value().toInt());
+                }
+                File iconsWrite = SPIFFS.open(SLOT_ICONS_FILE, "w");
+                iconsWrite.write(icons, SLOTS_TOTAL);
+                iconsWrite.close();
+
                 result = true;
             }
         }
@@ -9785,6 +9821,15 @@ void startWebserver()
                 slotsBinaryFileRead.read((byte *)&slotsObject, sizeof(slotsObject));
                 slotsBinaryFileRead.close();
                 String slotName = slotsObject.slot[currentSlot].name;
+
+                uint8_t icons[SLOTS_TOTAL] = {0};
+                File iconsFileRead = SPIFFS.open(SLOT_ICONS_FILE, "r");
+                if (iconsFileRead && iconsFileRead.size() == SLOTS_TOTAL) {
+                    iconsFileRead.read(icons, SLOTS_TOTAL);
+                }
+                if (iconsFileRead) {
+                    iconsFileRead.close();
+                }
 
                 // remove preset files
                 SPIFFS.remove("/preset_ntsc." + String((char)slot));
@@ -9823,12 +9868,18 @@ void startWebserver()
                     slotsObject.slot[currentSlot + loopCount].wantPeaking = slotsObject.slot[currentSlot + loopCount + 1].wantPeaking;
                     // slotsObject.slot[currentSlot + loopCount].name = slotsObject.slot[currentSlot + loopCount + 1].name;
                     strncpy(slotsObject.slot[currentSlot + loopCount].name, slotsObject.slot[currentSlot + loopCount + 1].name, 25);
+                    icons[currentSlot + loopCount] = icons[currentSlot + loopCount + 1];
                     loopCount++;
                 }
 
                 File slotsBinaryFileWrite = SPIFFS.open(SLOTS_FILE, "w");
                 slotsBinaryFileWrite.write((byte *)&slotsObject, sizeof(slotsObject));
                 slotsBinaryFileWrite.close();
+
+                File iconsFileWrite = SPIFFS.open(SLOT_ICONS_FILE, "w");
+                iconsFileWrite.write(icons, SLOTS_TOTAL);
+                iconsFileWrite.close();
+
                 SerialM.println("Preset \"" + slotName + "\" removed");
                 result = true;
             }
@@ -9891,6 +9942,15 @@ void startWebserver()
                 }
             }
 
+            uint8_t icons[SLOTS_TOTAL] = {0};
+            File iconsRead = SPIFFS.open(SLOT_ICONS_FILE, "r");
+            if (iconsRead && iconsRead.size() == SLOTS_TOTAL) {
+                iconsRead.read(icons, SLOTS_TOTAL);
+            }
+            if (iconsRead) {
+                iconsRead.close();
+            }
+
             for (uint8_t i = 0; i < gbsc_custom_slots_size; i++) {
                 const GbscCustomSlotDef &s = gbsc_custom_slots[i];
                 char padded[25] = "                        ";
@@ -9903,6 +9963,7 @@ void startWebserver()
                 slotsObject.slot[s.slotIdx].wantVdsLineFilter = s.wantVdsLineFilter;
                 slotsObject.slot[s.slotIdx].wantStepResponse = s.wantStepResponse;
                 slotsObject.slot[s.slotIdx].wantPeaking = s.wantPeaking;
+                icons[s.slotIdx] = s.iconId;
             }
 
             File slotsWrite = SPIFFS.open(SLOTS_FILE, "w");
@@ -9912,6 +9973,10 @@ void startWebserver()
                 result = true;
                 SerialM.println(F("custom preset slots applied"));
             }
+
+            File iconsWrite = SPIFFS.open(SLOT_ICONS_FILE, "w");
+            iconsWrite.write(icons, SLOTS_TOTAL);
+            iconsWrite.close();
         }
         request->send(200, "application/json", result ? "true" : "false");
     });

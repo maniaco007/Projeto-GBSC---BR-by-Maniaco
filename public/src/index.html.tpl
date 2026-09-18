@@ -17,6 +17,123 @@
     />
   </head>
   <body tabindex="0" class="gbs-help-hide gbs-output-hide">
+    <svg style="display: none" aria-hidden="true">
+      <symbol id="gbs-slot-icon-0" viewBox="0 0 24 24">
+        <path d="M6 9a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V9zm3-1a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H9z"/>
+        <circle cx="12" cy="12" r="1.6"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-1" viewBox="0 0 24 24">
+        <rect x="7" y="3" width="10" height="18" rx="2"/>
+        <rect x="9" y="6" width="6" height="9" fill="#3ea6ff" opacity="0.9"/>
+        <circle cx="12" cy="17.5" r="1" fill="#000" opacity="0.85"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-2" viewBox="0 0 24 24">
+        <rect x="2.5" y="9" width="19" height="7" rx="1"/>
+        <rect x="5" y="10.4" width="2" height="4.2" fill="#8a5a2b"/>
+        <rect x="8" y="10.4" width="2" height="4.2" fill="#8a5a2b"/>
+        <rect x="11" y="10.4" width="2" height="4.2" fill="#8a5a2b"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-3" viewBox="0 0 24 24">
+        <rect x="2.5" y="9.5" width="19" height="6" rx="1"/>
+        <circle cx="8.5" cy="12.5" r="2" fill="#e8823c"/>
+        <circle cx="15.5" cy="12.5" r="2" fill="#e8823c"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-4" viewBox="0 0 24 24">
+        <rect x="2.5" y="8.5" width="19" height="8" rx="1.2"/>
+        <circle cx="9" cy="12.5" r="2.6" fill="#d9541f"/>
+        <circle cx="16" cy="12.5" r="2.6" fill="#d9541f"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-5" viewBox="0 0 24 24">
+        <path d="M9 2h6l1.5 2.2v15.6L15 22H9l-1.5-2.2V4.2z"/>
+        <rect x="10.3" y="5" width="3.4" height="12" fill="#3d7bff" opacity="0.9"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-6" viewBox="0 0 24 24">
+        <rect x="2.5" y="7" width="19" height="10" rx="2.5"/>
+        <circle cx="12" cy="12" r="2.6" fill="#3aa757"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-7" viewBox="0 0 24 24">
+        <rect x="10" y="2" width="4" height="20" rx="2"/>
+        <circle cx="12" cy="19" r="1.1" fill="#3ea6ff"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-8" viewBox="0 0 24 24">
+        <rect x="2.5" y="9" width="19" height="6.5" rx="1"/>
+        <path d="M2.5 9h19l-3 6.5h-13z" fill="#d3242f" opacity="0.9"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-9" viewBox="0 0 40 40">
+        <image href="data:image/png;base64,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" width="40" height="40"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-10" viewBox="0 0 24 24">
+        <rect x="2.5" y="8" width="19" height="8" rx="4"/>
+        <path d="M8 12a4 4 0 0 1 8 0" fill="none" stroke="#ff7a1a" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="12" cy="12.3" r="0.8" fill="#ff7a1a"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-11" viewBox="0 0 24 24">
+        <rect x="2.5" y="9" width="19" height="7" rx="1"/>
+        <rect x="5" y="10.4" width="6" height="4.2" fill="#333" opacity="0.85"/>
+        <circle cx="19" cy="12.5" r="1.1" fill="#d3242f"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-12" viewBox="0 0 24 24">
+        <rect x="2.5" y="10" width="19" height="6" rx="1"/>
+        <circle cx="12" cy="9" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <circle cx="12" cy="9" r="1.6" fill="#9aa0a6"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-13" viewBox="0 0 24 24">
+        <rect x="2.5" y="7.5" width="19" height="9" rx="3.5"/>
+        <circle cx="12" cy="12" r="3" fill="none" stroke="#8560ff" stroke-width="1.6"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-14" viewBox="0 0 24 24">
+        <rect x="2.5" y="9" width="19" height="7" rx="1.5"/>
+        <circle cx="7" cy="12.5" r="1.2" fill="#3d7bff"/>
+        <circle cx="10.4" cy="12.5" r="1.2" fill="#d3242f"/>
+        <circle cx="13.8" cy="12.5" r="1.2" fill="#3aa757"/>
+        <circle cx="17.2" cy="12.5" r="1.2" fill="#f2c218"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-15" viewBox="0 0 24 24">
+        <rect x="3" y="8" width="18" height="8" rx="1"/>
+        <path d="M3 8h18v3H3z" fill="#5a6068" opacity="0.9"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-16" viewBox="0 0 24 24">
+        <rect x="3" y="7" width="18" height="10" rx="3"/>
+        <circle cx="12" cy="12" r="2.6" fill="#d8b23a"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-17" viewBox="0 0 24 24">
+        <rect x="2.5" y="9" width="19" height="7" rx="1.2"/>
+        <rect x="9.5" y="10.4" width="5" height="1.6" fill="#c9c9c9"/>
+        <circle cx="18" cy="12.5" r="1" fill="#3aa757"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-18" viewBox="0 0 24 24">
+        <path d="M4 9h13l4 3.5-4 3.5H4z"/>
+        <path d="M6 11h9v3H6z" fill="#d3242f" opacity="0.85"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-19" viewBox="0 0 24 24">
+        <rect x="4" y="6" width="16" height="12" rx="1.5"/>
+        <circle cx="12" cy="12" r="2.4" fill="#e8e8e8"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-20" viewBox="0 0 24 24">
+        <rect x="7" y="8" width="10" height="8" rx="1"/>
+        <circle cx="3.5" cy="12" r="2.6" fill="#d3242f"/>
+        <circle cx="20.5" cy="12" r="2.6" fill="#e8e8e8"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-21" viewBox="0 0 24 24">
+        <rect x="1.5" y="10" width="21" height="4.5" rx="1"/>
+        <circle cx="18" cy="12.3" r="1.6" fill="#d3242f"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-22" viewBox="0 0 24 24">
+        <rect x="3" y="9" width="18" height="9" rx="1"/>
+        <path d="M4 9a8 8 0 0 1 16 0z" fill="none" stroke="#d8b23a" stroke-width="1.5"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-23" viewBox="0 0 24 24">
+        <rect x="2.5" y="9" width="19" height="7" rx="1"/>
+        <rect x="5" y="10.2" width="12" height="4.6" fill="#8a5a2b"/>
+        <rect x="14.5" y="10.9" width="1.4" height="1.4" fill="#e8e8e8"/>
+        <rect x="16.4" y="10.9" width="1.4" height="1.4" fill="#e8e8e8"/>
+        <rect x="18.3" y="10.9" width="1.4" height="1.4" fill="#e8e8e8"/>
+      </symbol>
+      <symbol id="gbs-slot-icon-24" viewBox="0 0 24 24">
+        <rect x="3" y="7.5" width="18" height="9" rx="1"/>
+        <circle cx="12" cy="12" r="2.4" fill="#3aa757"/>
+      </symbol>
+    </svg>
     <div class="gbs-container">
       <div class="gbs-menu">
         <svg
@@ -1401,6 +1518,21 @@
               >
                 <div class="gbs-icon">done</div>
                 <div>OK</div>
+              </button>
+            </div>
+          </fieldset>
+        </section>
+        <section name="iconpicker" hidden>
+          <fieldset class="gbs-fieldset">
+            <legend class="gbs-fieldset__legend">
+              <div class="gbs-icon">stadia_controller</div>
+              <div>Escolha um ícone</div>
+            </legend>
+            <div class="gbs-flex gbs-icon-picker" gbs-icon-picker-grid></div>
+            <div class="gbs-flex">
+              <button gbs-icon-picker-cancel class="gbs-button gbs-button__control">
+                <div class="gbs-icon">close</div>
+                <div>CANCELAR</div>
               </button>
             </div>
           </fieldset>

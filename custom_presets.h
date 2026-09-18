@@ -184,14 +184,15 @@ struct GbscCustomSlotDef {
   uint8_t wantVdsLineFilter;
   uint8_t wantStepResponse;
   uint8_t wantPeaking;
+  uint8_t iconId;
 };
 
 const GbscCustomSlotDef gbsc_custom_slots[] = {
-  {  0, "Super Nintendo          ", 0, 48, 1, 1, 1 },
-  {  1, "Mega Drive              ", 0, 0, 1, 1, 1 },
-  {  2, "PlayStation 1           ", 0, 0, 1, 1, 1 },
-  {  3, "PlayStation 2           ", 0, 0, 0, 1, 1 },
-  {  4, "Nintendo 64             ", 0, 0, 0, 1, 1 },
+  {  0, "Super Nintendo          ", 0, 48, 1, 1, 1, 17 },
+  {  1, "Mega Drive              ", 0, 0, 1, 1, 1, 11 },
+  {  2, "PlayStation 1           ", 0, 0, 1, 1, 1, 15 },
+  {  3, "PlayStation 2           ", 0, 0, 0, 1, 1, 5 },
+  {  4, "Nintendo 64             ", 0, 0, 0, 1, 1, 14 },
 };
 const uint8_t gbsc_custom_slots_size = 5;
 

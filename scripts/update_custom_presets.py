@@ -76,6 +76,70 @@ def c_identifier(filename: str) -> str:
     return "gbsc_custom_" + base
 
 
+# Slot icon ids, matching gbs-slot-icon-N symbols defined in index.html.tpl.
+# 0 is the generic/unset placeholder icon.
+ICON_GENERIC = 0
+ICON_ZEEBO = 1
+ICON_PHILIPS_ODYSSEY = 2
+ICON_TELEJOGO = 3
+ICON_ATARI_VIDEO_PINBALL = 4
+ICON_PS2 = 5
+ICON_XBOX_CLASSIC = 6
+ICON_WII = 7
+ICON_MASTER_SYSTEM = 8
+ICON_GAMECUBE = 9
+ICON_DREAMCAST = 10
+ICON_MEGA_DRIVE = 11
+ICON_SEGA_CD = 12
+ICON_SATURN = 13
+ICON_N64 = 14
+ICON_PS1 = 15
+ICON_NEO_GEO_CD = 16
+ICON_SNES = 17
+ICON_JAGUAR = 18
+ICON_AMIGA_CD32 = 19
+ICON_TWIN_FAMICOM = 20
+ICON_TURBO_DUO = 21
+ICON_3DO = 22
+ICON_ATARI_2600 = 23
+ICON_CDI = 24
+
+ICON_KEYWORDS = [
+    (("zeebo",), ICON_ZEEBO),
+    (("odyssey",), ICON_PHILIPS_ODYSSEY),
+    (("telejogo",), ICON_TELEJOGO),
+    (("video pimball", "video pinball"), ICON_ATARI_VIDEO_PINBALL),
+    (("ps2", "playstation 2"), ICON_PS2),
+    (("xbox",), ICON_XBOX_CLASSIC),
+    (("wii",), ICON_WII),
+    (("master system",), ICON_MASTER_SYSTEM),
+    (("gamecube", "game cube"), ICON_GAMECUBE),
+    (("dreamcast",), ICON_DREAMCAST),
+    (("mega drive", "genesis"), ICON_MEGA_DRIVE),
+    (("sega cd",), ICON_SEGA_CD),
+    (("saturn",), ICON_SATURN),
+    (("nintendo 64", "n64"), ICON_N64),
+    (("psone", "ps1", "playstation 1", "psx"), ICON_PS1),
+    (("neo geo",), ICON_NEO_GEO_CD),
+    (("super nintendo", "snes"), ICON_SNES),
+    (("jaguar",), ICON_JAGUAR),
+    (("cd32", "amiga"), ICON_AMIGA_CD32),
+    (("twin famicom", "famicom"), ICON_TWIN_FAMICOM),
+    (("turbo duo", "pc engine", "turbografx"), ICON_TURBO_DUO),
+    (("3do",), ICON_3DO),
+    (("atari 2600", "atari"), ICON_ATARI_2600),
+    (("cdi", "cd-i", "cd i"), ICON_CDI),
+]
+
+
+def guess_icon(name: str) -> int:
+    lower = name.lower()
+    for keywords, icon in ICON_KEYWORDS:
+        if any(k in lower for k in keywords):
+            return icon
+    return ICON_GENERIC
+
+
 def render_header(preset_files: list[tuple[str, list[int]]], named_slots: list[dict]) -> str:
     lines = [
         "#ifndef _CUSTOM_PRESETS_H_",
@@ -120,6 +184,7 @@ def render_header(preset_files: list[tuple[str, list[int]]], named_slots: list[d
     lines.append("  uint8_t wantVdsLineFilter;")
     lines.append("  uint8_t wantStepResponse;")
     lines.append("  uint8_t wantPeaking;")
+    lines.append("  uint8_t iconId;")
     lines.append("};")
     lines.append("")
     lines.append("const GbscCustomSlotDef gbsc_custom_slots[] = {")
@@ -128,7 +193,8 @@ def render_header(preset_files: list[tuple[str, list[int]]], named_slots: list[d
         lines.append(
             f'  {{ {s["idx"]:>2}, "{padded_name}", '
             f'{s["scanlines"]}, {s["scanlinesStrength"]}, '
-            f'{s["wantVdsLineFilter"]}, {s["wantStepResponse"]}, {s["wantPeaking"]} }},'
+            f'{s["wantVdsLineFilter"]}, {s["wantStepResponse"]}, {s["wantPeaking"]}, '
+            f'{guess_icon(s["name"])} }},'
         )
     lines.append("};")
     lines.append(f"const uint8_t gbsc_custom_slots_size = {len(named_slots)};")

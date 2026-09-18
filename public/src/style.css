@@ -198,13 +198,17 @@ body {
   white-space: normal;
 }
 
-.gbs-button__slot::after {
-  color: var(--color-primary);
-  content: attr(gbs-meta);
-  display: block;
-  font-size: 10px;
-  line-height: 14px;
-  white-space: pre;
+.gbs-button__slot[gbs-name="Empty"]::before {
+  content: "Vazio";
+}
+
+.gbs-slot-icon {
+  bottom: 6px;
+  fill: var(--color-primary);
+  height: 20px;
+  position: absolute;
+  right: 6px;
+  width: 20px;
 }
 
 .gbs-button__resolution {
@@ -510,13 +514,34 @@ input {
 /* modals */
 
 section[name="prompt"],
-section[name="alert"] {
+section[name="alert"],
+section[name="iconpicker"] {
   background-color: rgba(0, 0, 0, 0.96);
   bottom: 0;
   left: 0;
   position: absolute;
   right: 0;
   top: 0;
+}
+
+.gbs-icon-picker {
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.gbs-icon-picker__item {
+  align-items: center;
+  display: flex;
+  flex-grow: 0;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
+}
+
+.gbs-icon-picker__item svg {
+  fill: currentColor;
+  height: 26px;
+  width: 26px;
 }
 
 .gbs-modal__message {
