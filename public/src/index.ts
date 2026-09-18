@@ -594,6 +594,40 @@ const initInputLockButtons = () => {
     .catch(() => {});
 };
 
+let scanlineBoostValue: number = null;
+
+const updateScanlineBoostReadout = () => {
+  const el = document.querySelector("[gbs-scanline-boost-readout]");
+  if (el) {
+    el.textContent = scanlineBoostValue === null ? "—" : String(scanlineBoostValue);
+  }
+};
+
+const initScanlineBoostButtons = () => {
+  const buttons = nodelistToArray<HTMLElement>(
+    document.querySelectorAll(".gbs-scanline-boost-btn")
+  );
+  buttons.forEach((button) => {
+    const delta = parseInt(button.getAttribute("gbs-scanline-boost-delta") || "0", 10);
+    button.addEventListener("click", () => {
+      if (scanlineBoostValue === null) {
+        return;
+      }
+      scanlineBoostValue = Math.max(0, Math.min(0x40, scanlineBoostValue + delta));
+      updateScanlineBoostReadout();
+      fetch(`/gbs/scanline-boost-set?value=${scanlineBoostValue}&${+new Date()}`).catch(() => {});
+    });
+  });
+
+  fetch(`/gbs/scanline-boost?${+new Date()}`)
+    .then((r) => r.json())
+    .then((value: number) => {
+      scanlineBoostValue = value;
+      updateScanlineBoostReadout();
+    })
+    .catch(() => {});
+};
+
 const doImportCustomPresets = () => {
   const button = document.querySelector(
     ".gbs-custom-presets-button"
@@ -1619,6 +1653,7 @@ const initUI = () => {
   initIconPicker();
   initAdcGainButtons();
   initInputLockButtons();
+  initScanlineBoostButtons();
 };
 
 const main = () => {

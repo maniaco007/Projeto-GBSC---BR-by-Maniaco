@@ -869,7 +869,19 @@
                 <!-- prettier-ignore -->
                 <li>Scanlines só funcionam com fontes 240p, ou 480i com desentrelaçamento Bob.</li>
                 <li>O filtro de linha elimina artefatos de pixels quadriculados ao escalar acima de 480p, recomendado.</li>
+                <li>Realce de brilho das scanlines compensa a perda de brilho/contraste que o efeito causa (parecido com o brilho dos fósforos numa CRT de verdade). 0 = desativado.</li>
               </ul>
+              <div class="gbs-flex gbs-margin__bottom--16">
+                <button class="gbs-button gbs-button__control gbs-scanline-boost-btn" gbs-scanline-boost-delta="-4">
+                  <div class="gbs-icon">remove_circle_outline</div>
+                  <div>realce scanlines</div>
+                </button>
+                <div class="gbs-button gbs-button__control" style="flex-grow: 0; text-align: center" gbs-scanline-boost-readout>—</div>
+                <button class="gbs-button gbs-button__control gbs-scanline-boost-btn" gbs-scanline-boost-delta="4">
+                  <div class="gbs-icon">add_circle_outline</div>
+                  <div>realce scanlines</div>
+                </button>
+              </div>
               <div class="gbs-flex">
                 <button
                   gbs-message="f"

@@ -40,6 +40,9 @@ struct userOptions
     uint8_t inputSourceLock;
     // screen / output shuts off after this many minutes without sync; 0 = disabled
     uint8_t screenOffTimeoutMinutes;
+    // extra luma gain applied while scanlines are on, to compensate for the
+    // darker averaged brightness of the mixing-based scanline effect; 0 = off (old behavior)
+    uint8_t scanlineBrightnessBoost;
 };
 
 
@@ -83,6 +86,7 @@ struct runTimeOptions
     bool motionAdaptiveDeinterlaceActive;
     bool deinterlaceAutoEnabled;
     bool scanlinesEnabled;
+    uint8_t appliedScanlineBrightnessBoost; // what enableScanlines() actually applied, so disableScanlines() undoes exactly that
     bool boardHasPower;
     bool presetIsPalForce60;
     bool syncTypeCsync;

@@ -5568,6 +5568,15 @@ void runAutoGain()
     }
 }
 
+void setScanlineBrightnessBoost(uint8_t value) {
+    if (GBS::GBS_OPTION_SCANLINES_ENABLED::read() == 1 && rto->appliedScanlineBrightnessBoost != value) {
+        // live-adjust: undo the currently applied boost, apply the new one
+        GBS::VDS_Y_GAIN::write(GBS::VDS_Y_GAIN::read() - rto->appliedScanlineBrightnessBoost + value);
+        rto->appliedScanlineBrightnessBoost = value;
+    }
+    uopt->scanlineBrightnessBoost = value;
+}
+
 void enableScanlines()
 {
     if (GBS::GBS_OPTION_SCANLINES_ENABLED::read() == 0) {
@@ -5604,6 +5613,12 @@ void enableScanlines()
         GBS::RFF_LINE_FLIP::write(1);                          // clears potential garbage in rff buffer
 
         GBS::MAPDT_VT_SEL_PRGV::write(0);
+
+        rto->appliedScanlineBrightnessBoost = uopt->scanlineBrightnessBoost;
+        if (rto->appliedScanlineBrightnessBoost > 0) {
+            GBS::VDS_Y_GAIN::write(GBS::VDS_Y_GAIN::read() + rto->appliedScanlineBrightnessBoost);
+        }
+
         GBS::GBS_OPTION_SCANLINES_ENABLED::write(1);
     }
     rto->scanlinesEnabled = 1;
@@ -5625,8 +5640,12 @@ void disableScanlines()
 
         GBS::DIAG_BOB_PLDY_RAM_BYPS::write(1); // 2_00 7
         GBS::VDS_W_LEV_BYPS::write(1);         // brightness
-        //GBS::VDS_Y_GAIN::write(GBS::VDS_Y_GAIN::read() - 0x30);
-        //GBS::VDS_Y_OFST::write(GBS::VDS_Y_OFST::read() - 4);
+
+        if (rto->appliedScanlineBrightnessBoost > 0) {
+            GBS::VDS_Y_GAIN::write(GBS::VDS_Y_GAIN::read() - rto->appliedScanlineBrightnessBoost);
+            rto->appliedScanlineBrightnessBoost = 0;
+        }
+
         GBS::MADPT_Y_MI_OFFSET::write(0xff); // 2_0b offset 0xff disables mixing
         GBS::MADPT_VIIR_BYPS::write(1);      // 2_26 6 disable VIIR
         GBS::MADPT_PD_RAM_BYPS::write(1);
@@ -7163,6 +7182,7 @@ void loadDefaultUserOptions()
     uopt->disableExternalClockGenerator = 0; // #19
     uopt->inputSourceLock = 0;               // #20, 0 = auto detect
     uopt->screenOffTimeoutMinutes = 0;       // #21, 0 = disabled
+    uopt->scanlineBrightnessBoost = 0;       // #22, 0 = off (old behavior)
 }
 
 #if !ENABLE_WIFI
@@ -7482,6 +7502,9 @@ void setup()
 
             int screenOffRead = f.read(); // #21, raw byte (0-254 minutes, 255 == unset/old file)
             uopt->screenOffTimeoutMinutes = (screenOffRead < 0 || screenOffRead == 255) ? 0 : (uint8_t)screenOffRead;
+
+            int boostRead = f.read(); // #22, raw byte, 255 == unset/old file
+            uopt->scanlineBrightnessBoost = (boostRead < 0 || boostRead == 255 || boostRead > 0x40) ? 0 : (uint8_t)boostRead;
 
             f.close();
         }
@@ -10048,6 +10071,25 @@ void startWebserver()
         request->send(200, "application/json", result ? "true" : "false");
     });
 
+    // Extra luma gain applied while scanlines are on, to compensate for the
+    // darker averaged image the scanline mixing effect produces.
+    server.on("/gbs/scanline-boost", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(200, "application/json", String(uopt->scanlineBrightnessBoost));
+    });
+
+    server.on("/gbs/scanline-boost-set", HTTP_GET, [](AsyncWebServerRequest *request) {
+        bool result = false;
+        if (request->hasParam("value")) {
+            int value = request->getParam("value")->value().toInt();
+            if (value >= 0 && value <= 0x40) {
+                setScanlineBrightnessBoost((uint8_t)value);
+                saveUserPrefs();
+                result = true;
+            }
+        }
+        request->send(200, "application/json", result ? "true" : "false");
+    });
+
     server.on("/gbs/adc-gain-set", HTTP_GET, [](AsyncWebServerRequest *request) {
         bool result = false;
         if (request->hasParam("ch") && request->hasParam("value")) {
@@ -10480,6 +10522,7 @@ void saveUserPrefs()
     f.write(uopt->disableExternalClockGenerator + '0'); // #19
     f.write(uopt->inputSourceLock + '0');               // #20
     f.write(uopt->screenOffTimeoutMinutes);             // #21, raw byte
+    f.write(uopt->scanlineBrightnessBoost);             // #22, raw byte
 
     f.close();
 }
