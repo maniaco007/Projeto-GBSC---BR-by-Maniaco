@@ -7,6 +7,10 @@
 // growing SlotMeta, so existing slots.bin dumps on already-flashed devices
 // keep working unmodified. 0 = no icon / generic.
 #define SLOT_ICONS_FILE "/slot_icons.bin"
+// Per-slot linked input ("Link Perfil<->Entrada", idea ported from OSSC),
+// same 1-byte-per-slot approach as SLOT_ICONS_FILE. 0 = no link, 1 =
+// RGB/RGBS, 2 = Componente (same encoding as uopt->inputSourceLock).
+#define SLOT_INPUT_FILE "/slot_input.bin"
 typedef struct
 {
     char name[25];

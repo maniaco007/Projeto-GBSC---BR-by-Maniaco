@@ -57,6 +57,11 @@ struct userOptions
     // overriding whatever preset was last active. 0 = disabled: remember
     // and reapply the last active preset/resolution as before.
     uint8_t startupPresetSlot;
+    // "Link Entrada->Perfil" (idea from OSSC): remembers the last custom
+    // preset slot used on each physical input, so manually switching input
+    // (via inputSourceLock) can auto-reload it. Index 0 = RGB/RGBS, index 1
+    // = Componente. 0 = none recorded yet.
+    Ascii8 lastPresetPerInput[2];
 };
 
 

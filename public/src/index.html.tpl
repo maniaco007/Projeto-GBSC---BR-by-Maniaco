@@ -1006,6 +1006,7 @@
                   <!-- prettier-ignore -->
                   <ul class="gbs-help">
                     <li>Por padrão a entrada (RGB/RGBS ou Componente) é detectada automaticamente. Force uma delas se você tem as duas fontes conectadas ao mesmo tempo e quer trocar manualmente.</li>
+                    <li>Trocar manualmente pra uma entrada recarrega o último preset usado nela, e salvar um preset lembra qual entrada estava ativa — assim cada fonte já volta calibrada.</li>
                   </ul>
                   <div class="gbs-flex">
                     <button class="gbs-button gbs-button__control gbs-input-lock-btn" gbs-input-lock-value="0">

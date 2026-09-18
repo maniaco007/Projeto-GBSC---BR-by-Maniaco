@@ -21,6 +21,7 @@
 
 typedef TV5725<GBS_ADDR> GBS;
 extern void applyPresets(uint8_t videoMode);
+extern void applyPresetInputLink(Ascii8 slot);
 extern void setOutModeHdBypass(bool bypass);
 extern void saveUserPrefs();
 extern float getOutputFrameRate();
@@ -131,6 +132,7 @@ bool presetSelectionMenuHandler(OLEDMenuManager *manager, OLEDMenuItem *item, OL
     display->display();
     uopt->presetSlot = 'A' + item->tag; // ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~()!*:,
     uopt->presetPreference = PresetPreference::OutputCustomized;
+    applyPresetInputLink(uopt->presetSlot);
     saveUserPrefs();
     if (rto->videoStandardInput == 14) {
         // vga upscale path: let synwatcher handle it
@@ -348,7 +350,51 @@ bool currentSettingHandler(OLEDMenuManager *manager, OLEDMenuItem *, OLEDMenuNav
         uint8_t currentInput = GBS::ADC_INPUT_SEL::read();
         rto->presetID = GBS::GBS_PRESET_ID::read();
 
+        const char *resolutionText;
+        if (rto->presetID == 0x01 || rto->presetID == 0x11) {
+            resolutionText = "1280x960";
+        } else if (rto->presetID == 0x02 || rto->presetID == 0x12) {
+            resolutionText = "1280x1024";
+        } else if (rto->presetID == 0x03 || rto->presetID == 0x13) {
+            resolutionText = "1280x720";
+        } else if (rto->presetID == 0x05 || rto->presetID == 0x15) {
+            resolutionText = "1920x1080";
+        } else if (rto->presetID == 0x06 || rto->presetID == 0x16) {
+            resolutionText = "Downscale";
+        } else if (rto->presetID == 0x04) {
+            resolutionText = "720x480";
+        } else if (rto->presetID == 0x14) {
+            resolutionText = "768x576";
+        } else {
+            resolutionText = "bypass";
+        }
+
+        // "OSD status display" (idea from OSSC): flash the new video format
+        // for a few seconds whenever it changes, instead of just silently
+        // updating the idle screen. isFirstTime just seeds the tracker
+        // (entering this screen isn't itself a "change").
+        static uint8_t lastKnownPresetID = 0xFF;
+        static unsigned long formatBannerUntil = 0;
+        if (isFirstTime) {
+            lastKnownPresetID = rto->presetID;
+        } else if (rto->presetID != lastKnownPresetID) {
+            lastKnownPresetID = rto->presetID;
+            formatBannerUntil = millis() + 3000;
+        }
+
         display.setFont(URW_Gothic_L_Book_20);
+
+        if (millis() < formatBannerUntil) {
+            display.setTextAlignment(TEXT_ALIGN_CENTER);
+            display.drawString(OLED_MENU_WIDTH / 2, 2, "Formato mudou");
+            display.drawString(OLED_MENU_WIDTH / 2, 24, resolutionText);
+            display.setFont(DejaVu_Sans_Mono_12);
+            display.drawString(OLED_MENU_WIDTH / 2, 48, String(ofr, 3) + "Hz");
+            display.display();
+            lastUpdateTime = millis();
+            return false;
+        }
+
         display.setTextAlignment(TEXT_ALIGN_LEFT);
 
         char activePresetName[sizeof(SlotMeta::name)];
@@ -358,22 +404,8 @@ bool currentSettingHandler(OLEDMenuManager *manager, OLEDMenuItem *, OLEDMenuNav
             drawPresetGlyph(display, 0, 3);
         } else if (showActivePreset) {
             display.drawString(0, 0, activePresetName);
-        } else if (rto->presetID == 0x01 || rto->presetID == 0x11) {
-            display.drawString(0, 0, "1280x960");
-        } else if (rto->presetID == 0x02 || rto->presetID == 0x12) {
-            display.drawString(0, 0, "1280x1024");
-        } else if (rto->presetID == 0x03 || rto->presetID == 0x13) {
-            display.drawString(0, 0, "1280x720");
-        } else if (rto->presetID == 0x05 || rto->presetID == 0x15) {
-            display.drawString(0, 0, "1920x1080");
-        } else if (rto->presetID == 0x06 || rto->presetID == 0x16) {
-            display.drawString(0, 0, "Downscale");
-        } else if (rto->presetID == 0x04) {
-            display.drawString(0, 0, "720x480");
-        } else if (rto->presetID == 0x14) {
-            display.drawString(0, 0, "768x576");
         } else {
-            display.drawString(0, 0, "bypass");
+            display.drawString(0, 0, resolutionText);
         }
 
         display.drawString(0, 20, String(ofr, 5) + "Hz");

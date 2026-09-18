@@ -7214,6 +7214,8 @@ void loadDefaultUserOptions()
     uopt->htotalTrim = 0;                    // #23, 0 = no trim
     uopt->oledPresetDisplayMode = 0;         // #24, 0 = preset name
     uopt->startupPresetSlot = 0;             // #25, 0 = disabled (remember last used preset)
+    uopt->lastPresetPerInput[0] = 0;         // #26, RGB/RGBS, 0 = none recorded
+    uopt->lastPresetPerInput[1] = 0;         // #27, Componente, 0 = none recorded
 }
 
 #if !ENABLE_WIFI
@@ -7561,6 +7563,12 @@ void setup()
 
             int startupSlotRead = f.read(); // #25, raw byte, -1 == unset/old file
             uopt->startupPresetSlot = (startupSlotRead < 0) ? 0 : (uint8_t)startupSlotRead;
+
+            int lastRgbRead = f.read(); // #26, raw byte, -1 == unset/old file
+            uopt->lastPresetPerInput[0] = (lastRgbRead < 0) ? 0 : (uint8_t)lastRgbRead;
+
+            int lastCompRead = f.read(); // #27, raw byte, -1 == unset/old file
+            uopt->lastPresetPerInput[1] = (lastCompRead < 0) ? 0 : (uint8_t)lastCompRead;
 
             f.close();
         }
@@ -9171,6 +9179,7 @@ void handleType2Command(char argument)
         case '3': // load custom preset
         {
             uopt->presetPreference = OutputCustomized; // custom
+            applyPresetInputLink(uopt->presetSlot);
             if (rto->videoStandardInput == 14) {
                 // vga upscale path: let synwatcher handle it
                 rto->videoStandardInput = 15;
@@ -9952,6 +9961,22 @@ void startWebserver()
                 iconsWrite.write(icons, SLOTS_TOTAL);
                 iconsWrite.close();
 
+                // "Link Perfil->Entrada" (idea from OSSC): remember which
+                // physical input was active while this preset was tuned, so
+                // loading it later can switch back to it automatically.
+                uint8_t inputs[SLOTS_TOTAL] = {0};
+                File inputsRead = LittleFS.open(SLOT_INPUT_FILE, "r");
+                if (inputsRead && inputsRead.size() == SLOTS_TOTAL) {
+                    inputsRead.read(inputs, SLOTS_TOTAL);
+                }
+                if (inputsRead) {
+                    inputsRead.close();
+                }
+                inputs[slotIndex] = GBS::ADC_INPUT_SEL::read() ? 1 : 2;
+                File inputsWrite = LittleFS.open(SLOT_INPUT_FILE, "w");
+                inputsWrite.write(inputs, SLOTS_TOTAL);
+                inputsWrite.close();
+
                 result = true;
             }
         }
@@ -9993,6 +10018,15 @@ void startWebserver()
                     iconsFileRead.close();
                 }
 
+                uint8_t inputs[SLOTS_TOTAL] = {0};
+                File inputsFileRead = LittleFS.open(SLOT_INPUT_FILE, "r");
+                if (inputsFileRead && inputsFileRead.size() == SLOTS_TOTAL) {
+                    inputsFileRead.read(inputs, SLOTS_TOTAL);
+                }
+                if (inputsFileRead) {
+                    inputsFileRead.close();
+                }
+
                 // remove preset files
                 LittleFS.remove("/preset_ntsc." + String((char)slot));
                 LittleFS.remove("/preset_pal." + String((char)slot));
@@ -10031,6 +10065,7 @@ void startWebserver()
                     // slotsObject.slot[currentSlot + loopCount].name = slotsObject.slot[currentSlot + loopCount + 1].name;
                     strncpy(slotsObject.slot[currentSlot + loopCount].name, slotsObject.slot[currentSlot + loopCount + 1].name, 25);
                     icons[currentSlot + loopCount] = icons[currentSlot + loopCount + 1];
+                    inputs[currentSlot + loopCount] = inputs[currentSlot + loopCount + 1];
                     loopCount++;
                 }
 
@@ -10041,6 +10076,10 @@ void startWebserver()
                 File iconsFileWrite = LittleFS.open(SLOT_ICONS_FILE, "w");
                 iconsFileWrite.write(icons, SLOTS_TOTAL);
                 iconsFileWrite.close();
+
+                File inputsFileWrite = LittleFS.open(SLOT_INPUT_FILE, "w");
+                inputsFileWrite.write(inputs, SLOTS_TOTAL);
+                inputsFileWrite.close();
 
                 SerialM.println("Preset \"" + slotName + "\" removed");
                 result = true;
@@ -10173,6 +10212,16 @@ void startWebserver()
             int value = request->getParam("value")->value().toInt();
             if (value >= 0 && value <= 2) {
                 uopt->inputSourceLock = (uint8_t)value;
+                // "Link Entrada->Perfil" (idea from OSSC): manually forcing an
+                // input reloads whatever custom preset was last used on it.
+                if (value == 1 || value == 2) {
+                    Ascii8 linkedSlot = uopt->lastPresetPerInput[value - 1];
+                    if (linkedSlot != 0 && (uopt->presetPreference != OutputCustomized || linkedSlot != uopt->presetSlot)) {
+                        uopt->presetSlot = linkedSlot;
+                        uopt->presetPreference = OutputCustomized;
+                        applyPresets(rto->videoStandardInput);
+                    }
+                }
                 requestSaveUserPrefs();
                 result = true;
             }
@@ -10668,6 +10717,42 @@ void requestSaveUserPrefs() {
     prefsSaveRequestedAt = millis();
 }
 
+// "Link Perfil<->Entrada" (idea from OSSC). Reads /slot_input.bin (1 byte
+// per slot) for the given slot letter. Returns 0 (no link) if unset or the
+// file doesn't exist.
+uint8_t getSlotLinkedInput(Ascii8 slot) {
+    int index = (int)slot - 'A';
+    if (index < 0 || index >= SLOTS_TOTAL) {
+        return 0;
+    }
+    File f = LittleFS.open(SLOT_INPUT_FILE, "r");
+    if (!f) {
+        return 0;
+    }
+    uint8_t value = 0;
+    if (f.seek(index)) {
+        int b = f.read();
+        if (b >= 0) {
+            value = (uint8_t)b;
+        }
+    }
+    f.close();
+    return value;
+}
+
+// Called whenever a custom preset finishes loading (both webui and OLED
+// paths). Applies "Link Perfil->Entrada" (forces the input that was active
+// when this slot was saved, if any was recorded) and records this slot as
+// the last one used on the resulting active input, for "Link Entrada->Perfil".
+void applyPresetInputLink(Ascii8 slot) {
+    uint8_t linked = getSlotLinkedInput(slot);
+    if (linked == 1 || linked == 2) {
+        uopt->inputSourceLock = linked;
+    }
+    uint8_t effectiveInput = (linked == 1 || linked == 2) ? linked : (GBS::ADC_INPUT_SEL::read() ? 1 : 2);
+    uopt->lastPresetPerInput[effectiveInput - 1] = slot;
+}
+
 void saveUserPrefs()
 {
     File f = LittleFS.open("/preferencesv2.txt", "w");
@@ -10700,6 +10785,8 @@ void saveUserPrefs()
     f.write((uint8_t)(uopt->htotalTrim + 128));         // #23, signed, offset by 128
     f.write(uopt->oledPresetDisplayMode);               // #24, raw byte
     f.write(uopt->startupPresetSlot);                   // #25, raw byte
+    f.write(uopt->lastPresetPerInput[0]);                // #26, raw byte
+    f.write(uopt->lastPresetPerInput[1]);                // #27, raw byte
 
     f.close();
 }
