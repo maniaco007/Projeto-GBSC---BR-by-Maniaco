@@ -454,6 +454,15 @@ bool currentSettingHandler(OLEDMenuManager *manager, OLEDMenuItem *, OLEDMenuNav
 // icons that don't have an animation yet.
 bool presetScreenSaverHandler(OLEDDisplay *display)
 {
+    // Respect "Visor OLED: Exibicao" (uopt->oledPresetDisplayMode): only
+    // animate the preset's icon here when the user picked "Icone". In
+    // "Nome" mode this falls through to the default screensaver, since
+    // there's no equivalent animated-name treatment (yet) - otherwise the
+    // icon would keep showing during the screensaver regardless of the
+    // Nome/Icone choice, making the setting look like it does nothing.
+    if (uopt->oledPresetDisplayMode != 1) {
+        return false;
+    }
     const IconAnimation *anim = findIconAnimation(getActivePresetIconId());
     if (!anim || !anim->frameCount) {
         return false;
