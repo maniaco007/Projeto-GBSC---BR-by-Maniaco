@@ -580,7 +580,13 @@ section[name="iconpicker"] {
   display: flex;
   justify-content: center;
   margin: 0;
-  min-height: 44px;
+  /* Grid items default to min-width/min-height:auto, which uses the
+     button's content-based minimum size and refuses to shrink below it -
+     with 6 columns that's wider than a phone screen, forcing the whole
+     page to overflow horizontally. min-width/min-height:0 lets the grid's
+     1fr columns actually win. */
+  min-height: 0;
+  min-width: 0;
   width: auto;
 }
 
