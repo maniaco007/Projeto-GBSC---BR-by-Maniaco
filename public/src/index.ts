@@ -938,6 +938,12 @@ const initStartupPresetSelect = () => {
 };
 
 const fetchSlotNames = () => {
+  // The ESP8266 web server only handles a handful of concurrent
+  // connections, and there's usually already an open websocket - firing 3
+  // parallel fetches here made the 3rd (slot_conn.bin) fail silently often
+  // enough that the connector label basically never showed up. Fetch it
+  // sequentially, after the other two (which were already reliable as a
+  // pair), instead of adding a 3rd parallel request.
   return Promise.all([
     fetch(`/bin/slots.bin?${+new Date()}`).then((response) =>
       response.arrayBuffer()
@@ -945,35 +951,38 @@ const fetchSlotNames = () => {
     fetch(`/bin/slot_icons.bin?${+new Date()}`)
       .then((response) => response.arrayBuffer())
       .catch(() => null),
-    fetch(`/bin/slot_conn.bin?${+new Date()}`)
-      .then((response) => response.arrayBuffer())
-      .catch(() => null),
-  ]).then(
-    ([arrayBuffer, iconsBuffer, connBuffer]: [
-      ArrayBuffer,
-      ArrayBuffer | null,
-      ArrayBuffer | null
-    ]) => {
-      if (
-        arrayBuffer.byteLength ===
-        StructParser.getSize(Structs, "slots") * GBSControl.maxSlots
-      ) {
-        GBSControl.structs = {
-          slots: StructParser.parseStructArray(arrayBuffer, Structs, "slots"),
-        };
-        GBSControl.slotIcons =
-          iconsBuffer && iconsBuffer.byteLength === GBSControl.maxSlots
-            ? new Uint8Array(iconsBuffer)
-            : new Uint8Array(GBSControl.maxSlots);
+  ]).then(([arrayBuffer, iconsBuffer]: [ArrayBuffer, ArrayBuffer | null]) => {
+    if (
+      arrayBuffer.byteLength !==
+      StructParser.getSize(Structs, "slots") * GBSControl.maxSlots
+    ) {
+      return false;
+    }
+    GBSControl.structs = {
+      slots: StructParser.parseStructArray(arrayBuffer, Structs, "slots"),
+    };
+    GBSControl.slotIcons =
+      iconsBuffer && iconsBuffer.byteLength === GBSControl.maxSlots
+        ? new Uint8Array(iconsBuffer)
+        : new Uint8Array(GBSControl.maxSlots);
+    const fetchConn = () =>
+      fetch(`/bin/slot_conn.bin?${+new Date()}`)
+        .then((response) => response.arrayBuffer())
+        .catch(() => null);
+    // One retry: this device only has a handful of TCP connections to go
+    // around (there's usually a websocket open too), so a single fetch
+    // failing here and there is expected - not worth surfacing to the user
+    // over just trying once more.
+    return fetchConn()
+      .then((connBuffer) => (connBuffer ? connBuffer : fetchConn()))
+      .then((connBuffer: ArrayBuffer | null) => {
         GBSControl.slotConnectors =
           connBuffer && connBuffer.byteLength === GBSControl.maxSlots
             ? new Uint8Array(connBuffer)
             : new Uint8Array(GBSControl.maxSlots);
         return true;
-      }
-      return false;
-    }
-  );
+      });
+  });
 };
 
 const fetchSlotNamesErrorRetry = () => {
