@@ -7213,6 +7213,7 @@ void loadDefaultUserOptions()
     uopt->scanlineBrightnessBoost = 0;       // #22, 0 = off (old behavior)
     uopt->htotalTrim = 0;                    // #23, 0 = no trim
     uopt->oledPresetDisplayMode = 0;         // #24, 0 = preset name
+    uopt->startupPresetSlot = 0;             // #25, 0 = disabled (remember last used preset)
 }
 
 #if !ENABLE_WIFI
@@ -7558,10 +7559,19 @@ void setup()
             int oledModeRead = f.read(); // #24, raw byte, -1 == unset/old file
             uopt->oledPresetDisplayMode = (oledModeRead == 1) ? 1 : 0;
 
+            int startupSlotRead = f.read(); // #25, raw byte, -1 == unset/old file
+            uopt->startupPresetSlot = (startupSlotRead < 0) ? 0 : (uint8_t)startupSlotRead;
+
             f.close();
         }
     }
 
+    if (uopt->startupPresetSlot != 0) {
+        // Startup Profile: always boot into this specific custom preset,
+        // regardless of whatever preset/resolution was last active.
+        uopt->presetSlot = uopt->startupPresetSlot;
+        uopt->presetPreference = PresetPreference::OutputCustomized;
+    }
 
     GBS::PAD_CKIN_ENZ::write(1); // disable to prevent startup spike damage
     externalClockGenDetectAndInitialize();
@@ -10225,6 +10235,27 @@ void startWebserver()
         request->send(200, "application/json", result ? "true" : "false");
     });
 
+    // Startup Profile: 0 = disabled (remember last used preset, default
+    // behavior), else 1..SLOTS_TOTAL selects a specific slot (1-based) to
+    // always force-load on boot.
+    server.on("/gbs/startup-preset", HTTP_GET, [](AsyncWebServerRequest *request) {
+        int value = uopt->startupPresetSlot == 0 ? 0 : ((int)uopt->startupPresetSlot - 'A' + 1);
+        request->send(200, "application/json", String(value));
+    });
+
+    server.on("/gbs/startup-preset-set", HTTP_GET, [](AsyncWebServerRequest *request) {
+        bool result = false;
+        if (request->hasParam("value")) {
+            int value = request->getParam("value")->value().toInt();
+            if (value >= 0 && value <= SLOTS_TOTAL) {
+                uopt->startupPresetSlot = value == 0 ? 0 : (uint8_t)('A' + (value - 1));
+                requestSaveUserPrefs();
+                result = true;
+            }
+        }
+        request->send(200, "application/json", result ? "true" : "false");
+    });
+
     server.on("/gbs/adc-gain-set", HTTP_GET, [](AsyncWebServerRequest *request) {
         bool result = false;
         if (request->hasParam("ch") && request->hasParam("value")) {
@@ -10668,6 +10699,7 @@ void saveUserPrefs()
     f.write(uopt->scanlineBrightnessBoost);             // #22, raw byte
     f.write((uint8_t)(uopt->htotalTrim + 128));         // #23, signed, offset by 128
     f.write(uopt->oledPresetDisplayMode);               // #24, raw byte
+    f.write(uopt->startupPresetSlot);                   // #25, raw byte
 
     f.close();
 }

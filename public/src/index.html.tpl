@@ -424,6 +424,7 @@
             <!-- prettier-ignore -->
             <ul class="gbs-help">
               <li>Ajuste fino por canal (R/G/B), útil quando a placa tem uma tendência de cor (ex.: excesso de vermelho) que o ganho combinado não corrige. Desativa o Ganho Automático.</li>
+              <li>Quando o número fica vermelho, esse canal chegou no limite do ajuste (±40) — não há mais margem de ganho pra empurrar nessa direção.</li>
             </ul>
             <div class="gbs-flex gbs-margin__bottom--16">
               <button class="gbs-button gbs-button__control gbs-adc-gain-btn" gbs-adc-gain-channel="r" gbs-adc-gain-delta="-1">
@@ -1033,6 +1034,20 @@
                     <button class="gbs-button gbs-button__control gbs-oled-preset-display-btn" gbs-oled-preset-display-value="1">
                       <div>Ícone</div>
                     </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2">
+                  Perfil de Inicialização
+                  <!-- prettier-ignore -->
+                  <ul class="gbs-help">
+                    <li>Por padrão a GBS lembra e recarrega o último preset/resolução usado. Escolha um perfil aqui pra sempre carregar ele ao ligar, independente do que estava ativo antes de desligar.</li>
+                  </ul>
+                  <div class="gbs-flex">
+                    <select class="gbs-select" gbs-startup-preset-select>
+                      <option value="0">Desativado (lembrar o último usado)</option>
+                    </select>
                   </div>
                 </td>
               </tr>

@@ -163,6 +163,28 @@ body {
   font-weight: 400;
 }
 
+.gbs-button.gbs-readout[clip] {
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+
+.gbs-select {
+  appearance: none;
+  background-color: var(--color-mine-shaft-light);
+  border-radius: 4px;
+  border: 1px dashed rgba(var(--color-primary-rgba), 0.2);
+  color: var(--color-primary);
+  cursor: pointer;
+  flex-grow: 1;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 300;
+  height: 68px;
+  margin: 2px;
+  outline: 0;
+  padding: 4px 8px;
+}
+
 .gbs-button__secondary {
   border: 1px dashed rgba(var(--color-secondary-rgba), 0.3);
   color: rgba(var(--color-secondary-rgba), 0.7);

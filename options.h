@@ -52,6 +52,11 @@ struct userOptions
     // active; 0 = preset name, 1 = generic preset-loaded icon. Ignored (screen
     // shows the normal resolution text) when no custom preset is loaded.
     uint8_t oledPresetDisplayMode;
+    // if non-zero, always force-load this custom preset slot on boot
+    // (stored the same way as presetSlot: the slot's ASCII letter, 'A'+n),
+    // overriding whatever preset was last active. 0 = disabled: remember
+    // and reapply the last active preset/resolution as before.
+    uint8_t startupPresetSlot;
 };
 
 

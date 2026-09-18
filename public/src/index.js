@@ -448,8 +448,21 @@ const adcGainState = {
 const updateAdcGainReadouts = () => {
     ["r", "g", "b"].forEach((ch) => {
         const el = document.querySelector(`[gbs-adc-gain-readout="${ch}"]`);
-        if (el) {
-            el.textContent = adcGainState[ch] === null ? "—" : String(adcGainState[ch]);
+        if (!el) {
+            return;
+        }
+        const value = adcGainState[ch];
+        el.textContent = value === null ? "—" : String(value);
+        // No histogram/clip-detect register exists on this chip, so this isn't
+        // real video-level clipping like a proper scaler would show - it's a
+        // "you've hit the end of the adjustable range" warning, which is the
+        // closest honest equivalent: if the image still isn't right at +/-40,
+        // there's no more gain headroom left to give it.
+        if (value !== null && Math.abs(value) >= ADC_GAIN_OFFSET_LIMIT) {
+            el.setAttribute("clip", "");
+        }
+        else {
+            el.removeAttribute("clip");
         }
     });
 };
@@ -695,6 +708,51 @@ const updateSlotNames = () => {
             use.setAttribute("href", `#gbs-slot-icon-${iconId}`);
         }
     }
+    populateStartupPresetOptions();
+};
+let startupPresetValue = null;
+const applyStartupPresetSelectValue = () => {
+    const select = document.querySelector("[gbs-startup-preset-select]");
+    if (select && startupPresetValue !== null) {
+        select.value = String(startupPresetValue);
+    }
+};
+const populateStartupPresetOptions = () => {
+    const select = document.querySelector("[gbs-startup-preset-select]");
+    if (!select || !GBSControl.structs) {
+        return;
+    }
+    while (select.options.length > 1) {
+        select.remove(1);
+    }
+    for (let i = 0; i < GBSControl.maxSlots; i++) {
+        const slot = GBSControl.structs.slots[i];
+        const name = slot && slot.name ? slot.name.trim() : "";
+        if (!name || name === "Empty") {
+            continue;
+        }
+        const option = document.createElement("option");
+        option.value = String(i + 1);
+        option.textContent = name;
+        select.appendChild(option);
+    }
+    applyStartupPresetSelectValue();
+};
+const initStartupPresetSelect = () => {
+    const select = document.querySelector("[gbs-startup-preset-select]");
+    if (!select) {
+        return;
+    }
+    select.addEventListener("change", () => {
+        fetch(`/gbs/startup-preset-set?value=${select.value}&${+new Date()}`).catch(() => { });
+    });
+    fetch(`/gbs/startup-preset?${+new Date()}`)
+        .then((r) => r.json())
+        .then((value) => {
+        startupPresetValue = value;
+        applyStartupPresetSelectValue();
+    })
+        .catch(() => { });
 };
 const fetchSlotNames = () => {
     return Promise.all([
@@ -1417,6 +1475,7 @@ const initUI = () => {
     initAdcGainButtons();
     initInputLockButtons();
     initOledPresetDisplayButtons();
+    initStartupPresetSelect();
     initScanlineBoostButtons();
     initScreenOffButtons();
 };
