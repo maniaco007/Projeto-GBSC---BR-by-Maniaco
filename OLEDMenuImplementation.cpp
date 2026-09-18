@@ -6,6 +6,7 @@
 #include <ESP8266WiFi.h>
 #endif
 #include "FS.h"
+#include <LittleFS.h>
 #include "OLEDMenuImplementation.h"
 #include "options.h"
 #include "tv5725.h"
@@ -147,7 +148,7 @@ bool presetSelectionMenuHandler(OLEDMenuManager *manager, OLEDMenuItem *item, OL
 bool presetsCreationMenuHandler(OLEDMenuManager *manager, OLEDMenuItem *item, OLEDMenuNav, bool)
 {
     SlotMetaArray slotsObject;
-    File slotsBinaryFileRead = SPIFFS.open(SLOTS_FILE, "r");
+    File slotsBinaryFileRead = LittleFS.open(SLOTS_FILE, "r");
     manager->clearSubItems(item);
     int curNumSlot = 0;
     if (slotsBinaryFileRead) {
@@ -224,6 +225,55 @@ bool resetMenuHandler(OLEDMenuManager *manager, OLEDMenuItem *item, OLEDMenuNav,
     oledMenuFreezeTimeoutInMS = 2000; // freeze for 2 seconds
     return false;
 }
+// Looks up the name of the currently active custom preset slot (uopt->presetSlot)
+// straight from /slots.bin. Returns false (leaving outName untouched) when no
+// custom preset is active or the slot can't be found, so callers fall back to
+// the normal resolution text.
+static bool getActivePresetName(char *outName, size_t outSize)
+{
+    if (uopt->presetPreference != PresetPreference::OutputCustomized) {
+        return false;
+    }
+    File f = LittleFS.open(SLOTS_FILE, "r");
+    if (!f) {
+        return false;
+    }
+    SlotMetaArray slotsObject;
+    bool found = false;
+    if (f.read((byte *)&slotsObject, sizeof(slotsObject)) == (int)sizeof(slotsObject)) {
+        for (int i = 0; i < SLOTS_TOTAL; ++i) {
+            const SlotMeta &slot = slotsObject.slot[i];
+            if (slot.slot == uopt->presetSlot && strlen(slot.name) && strcmp(EMPTY_SLOT_NAME, slot.name) != 0) {
+                strncpy(outName, slot.name, outSize - 1);
+                outName[outSize - 1] = 0;
+                found = true;
+                break;
+            }
+        }
+    }
+    f.close();
+    return found;
+}
+
+// Simple vector gamepad glyph (capsule body with a D-pad and two face buttons
+// "punched" out in black) used as the generic "custom preset loaded" icon on
+// the OLED status screen. No per-console art exists yet, so every preset
+// currently shows this same glyph in icon mode.
+static void drawPresetGlyph(OLEDDisplay &display, int16_t x, int16_t y)
+{
+    const int16_t w = 30;
+    const int16_t h = 14;
+    display.setColor(OLEDDISPLAY_COLOR::WHITE);
+    display.fillRect(x + 7, y, w - 14, h);
+    display.fillCircle(x + 7, y + h / 2, h / 2);
+    display.fillCircle(x + w - 7, y + h / 2, h / 2);
+    display.setColor(OLEDDISPLAY_COLOR::BLACK);
+    display.fillRect(x + 5, y + h / 2 - 1, 5, 2);  // D-pad, horizontal bar
+    display.fillRect(x + 6, y + h / 2 - 2, 2, 4);  // D-pad, vertical bar
+    display.fillCircle(x + w - 10, y + h / 2 - 3, 1); // face button
+    display.fillCircle(x + w - 5, y + h / 2 + 2, 1);  // face button
+    display.setColor(OLEDDISPLAY_COLOR::WHITE);
+}
 bool currentSettingHandler(OLEDMenuManager *manager, OLEDMenuItem *, OLEDMenuNav nav, bool isFirstTime)
 {
     static unsigned long lastUpdateTime = 0;
@@ -261,7 +311,14 @@ bool currentSettingHandler(OLEDMenuManager *manager, OLEDMenuItem *, OLEDMenuNav
         display.setFont(URW_Gothic_L_Book_20);
         display.setTextAlignment(TEXT_ALIGN_LEFT);
 
-        if (rto->presetID == 0x01 || rto->presetID == 0x11) {
+        char activePresetName[sizeof(SlotMeta::name)];
+        bool showActivePreset = getActivePresetName(activePresetName, sizeof(activePresetName));
+
+        if (showActivePreset && uopt->oledPresetDisplayMode == 1) {
+            drawPresetGlyph(display, 0, 3);
+        } else if (showActivePreset) {
+            display.drawString(0, 0, activePresetName);
+        } else if (rto->presetID == 0x01 || rto->presetID == 0x11) {
             display.drawString(0, 0, "1280x960");
         } else if (rto->presetID == 0x02 || rto->presetID == 0x12) {
             display.drawString(0, 0, "1280x1024");

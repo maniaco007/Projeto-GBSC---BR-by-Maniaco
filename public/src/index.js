@@ -510,6 +510,30 @@ const initInputLockButtons = () => {
         .then((value) => markActive(String(value)))
         .catch(() => { });
 };
+const initOledPresetDisplayButtons = () => {
+    const buttons = nodelistToArray(document.querySelectorAll(".gbs-oled-preset-display-btn"));
+    const markActive = (value) => {
+        buttons.forEach((b) => {
+            if (b.getAttribute("gbs-oled-preset-display-value") === value) {
+                b.setAttribute("active", "");
+            }
+            else {
+                b.removeAttribute("active");
+            }
+        });
+    };
+    buttons.forEach((button) => {
+        const value = button.getAttribute("gbs-oled-preset-display-value");
+        button.addEventListener("click", () => {
+            markActive(value);
+            fetch(`/gbs/oled-preset-display-set?value=${value}&${+new Date()}`).catch(() => { });
+        });
+    });
+    fetch(`/gbs/oled-preset-display?${+new Date()}`)
+        .then((r) => r.json())
+        .then((value) => markActive(String(value)))
+        .catch(() => { });
+};
 let scanlineBoostValue = null;
 const updateScanlineBoostReadout = () => {
     const el = document.querySelector("[gbs-scanline-boost-readout]");
@@ -1392,6 +1416,7 @@ const initUI = () => {
     initIconPicker();
     initAdcGainButtons();
     initInputLockButtons();
+    initOledPresetDisplayButtons();
     initScanlineBoostButtons();
     initScreenOffButtons();
 };

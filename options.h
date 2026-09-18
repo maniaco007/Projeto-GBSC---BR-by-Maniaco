@@ -48,6 +48,10 @@ struct userOptions
     // no way to remember it (custom preset slots already capture VDS_HSYNC_RST
     // as part of their register dump, so this only matters for fixed presets)
     int8_t htotalTrim;
+    // what the OLED status screen shows while a custom preset (slot A-Z) is
+    // active; 0 = preset name, 1 = generic preset-loaded icon. Ignored (screen
+    // shows the normal resolution text) when no custom preset is loaded.
+    uint8_t oledPresetDisplayMode;
 };
 
 

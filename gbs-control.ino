@@ -7212,6 +7212,7 @@ void loadDefaultUserOptions()
     uopt->screenOffTimeoutMinutes = 0;       // #21, 0 = disabled
     uopt->scanlineBrightnessBoost = 0;       // #22, 0 = off (old behavior)
     uopt->htotalTrim = 0;                    // #23, 0 = no trim
+    uopt->oledPresetDisplayMode = 0;         // #24, 0 = preset name
 }
 
 #if !ENABLE_WIFI
@@ -7553,6 +7554,9 @@ void setup()
                 int16_t trim = (int16_t)trimRead - 128;
                 uopt->htotalTrim = (trim < -30 || trim > 30) ? 0 : (int8_t)trim;
             }
+
+            int oledModeRead = f.read(); // #24, raw byte, -1 == unset/old file
+            uopt->oledPresetDisplayMode = (oledModeRead == 1) ? 1 : 0;
 
             f.close();
         }
@@ -10203,6 +10207,24 @@ void startWebserver()
         request->send(200, "application/json", result ? "true" : "false");
     });
 
+    // What the OLED status screen shows while a custom preset is active: 0 = name, 1 = icon.
+    server.on("/gbs/oled-preset-display", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(200, "application/json", String(uopt->oledPresetDisplayMode));
+    });
+
+    server.on("/gbs/oled-preset-display-set", HTTP_GET, [](AsyncWebServerRequest *request) {
+        bool result = false;
+        if (request->hasParam("value")) {
+            int value = request->getParam("value")->value().toInt();
+            if (value == 0 || value == 1) {
+                uopt->oledPresetDisplayMode = (uint8_t)value;
+                requestSaveUserPrefs();
+                result = true;
+            }
+        }
+        request->send(200, "application/json", result ? "true" : "false");
+    });
+
     server.on("/gbs/adc-gain-set", HTTP_GET, [](AsyncWebServerRequest *request) {
         bool result = false;
         if (request->hasParam("ch") && request->hasParam("value")) {
@@ -10645,6 +10667,7 @@ void saveUserPrefs()
     f.write(uopt->screenOffTimeoutMinutes);             // #21, raw byte
     f.write(uopt->scanlineBrightnessBoost);             // #22, raw byte
     f.write((uint8_t)(uopt->htotalTrim + 128));         // #23, signed, offset by 128
+    f.write(uopt->oledPresetDisplayMode);               // #24, raw byte
 
     f.close();
 }

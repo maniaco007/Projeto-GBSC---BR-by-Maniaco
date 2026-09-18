@@ -1020,6 +1020,23 @@
                 </td>
               </tr>
               <tr>
+                <td colspan="2">
+                  Visor OLED: Preset Carregado
+                  <!-- prettier-ignore -->
+                  <ul class="gbs-help">
+                    <li>O que a telinha OLED mostra na tela principal quando um preset customizado (slot A-Z) está carregado. Sem preset carregado, a tela continua mostrando a resolução normalmente.</li>
+                  </ul>
+                  <div class="gbs-flex">
+                    <button class="gbs-button gbs-button__control gbs-oled-preset-display-btn" gbs-oled-preset-display-value="0">
+                      <div>Nome</div>
+                    </button>
+                    <button class="gbs-button gbs-button__control gbs-oled-preset-display-btn" gbs-oled-preset-display-value="1">
+                      <div>Ícone</div>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
                 <td>
                   Taxa de Quadros: Forçar PAL 50Hz para 60Hz
                   <!-- prettier-ignore -->
