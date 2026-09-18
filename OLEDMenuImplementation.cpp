@@ -163,7 +163,7 @@ bool presetsCreationMenuHandler(OLEDMenuManager *manager, OLEDMenuItem *item, OL
             if (curNumSlot > OLED_MENU_MAX_SUBITEMS_NUM) {
                 break;
             }
-            manager->registerItem(item, slot.slot, slot.name, presetSelectionMenuHandler);
+            manager->registerItem(item, slot.slot, slot.name, presetSelectionMenuHandler, nullptr, TEXT_ALIGN_LEFT);
         }
     }
 
