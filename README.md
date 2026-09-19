@@ -1,91 +1,84 @@
 <div align="center">
   <h1>🎮 GBS-Control PT-BR</h1>
+  <p><b>Versão brasileira e aprimorada do firmware do upscaler Tvia Trueview5725 (ESP8266 / Wemos D1 mini)</b></p>
+  <p>Mantida por <strong>Willian Nascimento (Maniaco Game Room)</strong></p>
   <p>
-    <strong>Versão brasileira e aprimorada do firmware do upscaler Tvia Trueview5725</strong><br>
-    Mantida por <a href="https://maniacogameroom.com.br/" target="_blank">Willian Nascimento (Maniaco Game Room)</a>
+    Tradução completa para PT-BR, sistema de perfis com automações avançadas, novos ícones para o display OLED e correções profundas no sistema de arquivos. Desenvolvido para a comunidade de hardware retro no Brasil.
   </p>
-  <p>
-    Tradução completa para PT-BR, sistema de perfis com automações avançadas, novos ícones para o display OLED e correções profundas no sistema de arquivos do ESP8266.
-  </p>
-  <br>
 </div>
 
-<h2>🇧🇷 Tradução </h2>
-<p>Todo o ecossistema do firmware foi localizado, entregando uma experiência 100% nativa:</p>
+<hr>
+
+<h2>📊 Números da Versão</h2>
 <ul>
-  <li><strong>WebUI Completa:</strong> Todas as abas, textos de ajuda e mensagens de erro traduzidos.</li>
-  <li><strong>Menu OLED:</strong> Navegação, nomes de opções e telas de status em português.</li>
-  <li><strong>Boot Logo Customizado:</strong> Arte própria do projeto substituindo a tela de inicialização padrão.</li>
-  <li><strong>Seletor de Linguagem:</strong> Escolha a linguagem que mais te agrada em poucos cliques.</li>
+  <li><strong>Firmware Otimizado:</strong> ~898 KB (86% do limite de 1.044.464 bytes)</li>
+  <li><strong>Customização:</strong> 56 ícones de console, 51 animações de protetor de tela</li>
+  <li><strong>Capacidade:</strong> 72 slots de perfil</li>
+  <li><strong>Visual:</strong> 6 temas de cor, 2 idiomas integrados na WebUI</li>
 </ul>
 
-<hr>
+<h2>🌍 Tradução e Redesign da Interface (WebUI)</h2>
+<p>Todo o ecossistema do firmware foi localizado e redesenhado, entregando uma experiência 100% nativa e agradável:</p>
+<ul>
+  <li><strong>Tradução e Seletor de Idioma:</strong> WebUI (abas, textos de ajuda, alertas e erros) e menu OLED traduzidos. O seletor (Português/English) aplica o inglês sobre o texto em português via dicionário exato (~110 entradas).</li>
+  <li><strong>Boot Logo Customizado:</strong> Arte própria do projeto no lugar da tela de inicialização padrão.</li>
+  <li><strong>Design Aprimorado:</strong> Cabeçalho novo, painéis escuros com títulos em barra metálica e botões com LED que acendem na cor do tema. Paginação adaptativa com base na altura da tela, facilitando o uso no celular.</li>
+  <li><strong>Temas de Cor:</strong> 6 opções baseadas em variáveis CSS (Padrão, Verde Fósforo, Synthwave, Âmbar CRT, Rubi Famicom, Roxo GameCube).</li>
+  <li><strong>Cards de Perfil:</strong> Arte do console ao fundo com contorno neon no perfil selecionado, sistema de busca inteligente (ignora acentos e maiúsculas) e contador de perfis.</li>
+</ul>
 
 <h2>⚙️ Base Técnica & Sistema de Arquivos</h2>
-<blockquote>
-  <p><strong>Migração de SPIFFS para LittleFS:</strong> O sistema de arquivos interno foi modernizado para o formato atual do ESP8266. Isso garante maior confiabilidade e <strong>corrigiu um bug crítico</strong> onde o menu OLED (aba Perfis) não encontrava os presets salvos, pois tentava ler o FS antigo enquanto a WebUI já operava no novo.</p>
-</blockquote>
-
-<hr>
+<ul>
+  <li><strong>Migração de SPIFFS para LittleFS:</strong> O sistema de arquivos foi modernizado para o formato atual do ESP8266, garantindo maior confiabilidade. <em>Atenção: A primeira inicialização formata a área de dados (é necessário backup prévio).</em></li>
+  <li><strong>Persistência Segura:</strong> O arquivo <code>/preferencesv2.txt</code> é sequencial. Novos campos foram acrescentados com valores padrão seguros para não quebrar backups existentes. Arquivos auxiliares por slot mantêm o mesmo padrão.</li>
+</ul>
 
 <h2>💾 Sistema de Perfis (Presets) e Automações</h2>
-<p>O gerenciamento de perfis foi reescrito para suportar até <strong>72 slots</strong> (<kbd>A-Z</kbd>, <kbd>a-z</kbd>, <kbd>0-9</kbd> e símbolos) e ganhou automações focadas em setups com múltiplos consoles:</p>
+<p>O gerenciamento foi reescrito para suportar até <strong>72 slots</strong> (A-Z, a-z, 0-9 e símbolos), ordenados alfabeticamente tanto na WebUI quanto no OLED.</p>
 
-<table>
+<table width="100%">
   <thead>
     <tr>
       <th align="left">Recurso</th>
-      <th align="left">O que faz</th>
+      <th align="left">Como Funciona</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td><strong>Origem de vídeo por preset</strong></td>
-      <td>Ao salvar um perfil, você escolhe o conector (SCART / VGA / Componente / RGBS). A informação é exibida no card do preset.</td>
+      <td><strong>Origem de Vídeo por Preset</strong></td>
+      <td>Ao salvar, você escolhe a entrada (SCART / VGA / Componente / RGBS). É uma etiqueta informativa exibida no card (o chip não distingue eletricamente).</td>
     </tr>
     <tr>
       <td><strong>Perfil de Inicialização</strong></td>
-      <td>Força um slot específico para ser carregado sempre que o aparelho liga (ignorando o "último usado").</td>
+      <td>Força um slot específico a ser carregado sempre que o aparelho liga, ignorando o "último usado".</td>
     </tr>
     <tr>
-      <td><strong>Aviso de Mudança de Formato</strong></td>
-      <td>O display OLED exibe <em>"Formato mudou"</em> + a nova resolução por 3 segundos ao alternar presets.</td>
+      <td><strong>Aviso de Mudança</strong></td>
+      <td>O display OLED exibe "Formato mudou" seguido da nova resolução por 3 segundos ao alternar presets.</td>
     </tr>
-  </tbody>
+    </tbody>
 </table>
 
-<hr>
-
 <h2>📺 Menu OLED & Ícones de Console</h2>
-<p>A interface física do aparelho foi amplamente expandida, ideal para quem gerencia coleções grandes com switches de vídeo.</p>
-
-<h3>Navegação e Display</h3>
+<p>Nova funcionalidade criada, seletor de icone para presets, ideal para quem gerencia coleções grandes com switches de vídeo.</p>
 <ul>
-  <li><strong>Aba Perfis:</strong> Navegação e seleção de presets salvos, ordenados alfabeticamente.</li>
-  <li><strong>Status Ativo:</strong> Nome e ícone do preset ativo ficam fixos na tela principal. Nomes longos rolam automaticamente e ficam alinhados à esquerda.</li>
+  <li><strong>Diponiveis 56 ícones:</strong> O seletor permite escolher entre (controles, logos e gabinetes) de sistemas Nintendo, Sega, NEC, SNK, Sony, Microsoft, Atari, Panasonic 3DO, entre outros.</li>
+  <li><strong>Processamento de Imagem:</strong> Cada arte teve recorte de bordas, fundo transparente e redimensionamento exato (40x40px). Na WebUI, um fundo claro atrás do ícone garante contraste no tema escuro.</li>
+  <li><strong>Protetor de Tela Inteligente:</strong>
+    <ul>
+      <li><strong>Modo Nome:</strong> O nome do preset passeia pela tela. A fonte diminui dinamicamente (URW Gothic 20/14, DejaVu Mono 12/10) usando a largura do texto para evitar cortes (ex: "Super Nintendo").</li>
+      <li><strong>Modo Ícone (Bounce):</strong> 51 dos 56 ícones ganharam animação de "quicar" de 4 quadros (32x32px, 1-bit). Conversão feita com threshold adaptativo (método de Otsu) e contorno automático de silhueta para não sumir no fundo preto. <em>(5 ícones complexos usam o Modo Nome como fallback).</em></li>
+    </ul>
+  </li>
+  <li><strong>Status Ativo:</strong> Nome e ícone do preset ativo ficam fixos na tela principal, com rolagem alinhada à esquerda para nomes longos.</li>
 </ul>
-
-<h3>Seletor de Ícones Expandido (De 25 para 56 Consoles)</h3>
-<p>O seletor original tinha apenas desenhos genéricos. Esta versão inclui <strong>56 ícones com arte real</strong> (controles, logos e gabinetes) cobrindo sistemas da Nintendo, Sega, NEC, SNK, Sony, Microsoft, Atari, Philips, Panasonic 3DO, entre outros.</p>
-<ul>
-  <li><em>Processamento:</em> Cada imagem passou por recorte de bordas, fundo transparente e redimensionamento exato (40x40px).</li>
-  <li><em>Contraste:</em> Adicionado um fundo claro atrás de cada ícone na WebUI para garantir a visibilidade de traços escuros.</li>
-</ul>
-
-<h3>Protetor de Tela Inteligente e Animações</h3>
-<p>O screensaver do OLED agora possui dois modos:</p>
-<ol>
-  <li><strong>Modo Nome:</strong> Usa uma fonte dinâmica que encolhe automaticamente em até 4 tamanhos para evitar cortes em nomes longos.</li>
-  <li><strong>Modo Ícone (Bounce):</strong> 51 dos 56 ícones ganharam uma animação de "quicar" de 4 quadros. Gerada em 1-bit com <em>threshold adaptativo</em> e contorno automático de silhuetas para garantir leitura no display pequeno.</li>
-</ol>
-
-<hr>
 
 <h2>🛠️ Correções de Bugs (Bugfixes)</h2>
+
 <details>
-  <summary><strong>Clique para expandir as correções técnicas</strong></summary>
+  <summary><strong>Clique para expandir as correções técnicas aplicadas</strong></summary>
   <br>
-  <table>
+  <table width="100%">
     <thead>
       <tr>
         <th align="left">Bug Original</th>
@@ -96,57 +89,45 @@
     <tbody>
       <tr>
         <td><strong>OLED não achava presets</strong></td>
-        <td>Dessincronia de File System (SPIFFS vs LittleFS).</td>
+        <td>Dessincronia de sistema de arquivos (OLED lia SPIFFS, WebUI lia LittleFS).</td>
         <td>Unificação total no LittleFS.</td>
       </tr>
       <tr>
         <td><strong>Slot quebrava no 27º perfil</strong></td>
-        <td>Código calculava slot por <code>'A' + índice</code> (limitado a 26).</td>
-        <td>Implementada tabela de 72 caracteres (<code>slotIndexMap</code>).</td>
+        <td>Código calculava slot por 'A' + índice (limitado a 26 posições).</td>
+        <td>Implementada tabela estática de 72 caracteres (<code>slotIndexMap</code>) no firmware inteiro.</td>
       </tr>
       <tr>
-        <td><strong>Origem de vídeo sumia do card</strong></td>
-        <td>3 requisições paralelas excediam limite do ESP8266.</td>
-        <td>Requisições sequenciadas com rotina de <em>retry</em>.</td>
+        <td><strong>Origem de vídeo falhava no card</strong></td>
+        <td>3 requisições paralelas excediam o limite de conexões do ESP8266.</td>
+        <td>Requisições sequenciadas com rotina de retry.</td>
       </tr>
       <tr>
-        <td><strong>Reboot ao salvar ícone</strong></td>
-        <td>Variáveis grandes na pilha em handler assíncrono.</td>
-        <td>Variáveis movidas para a memória estática.</td>
-      </tr>
-      <tr>
-        <td><strong>Ganho ADC manual resetando</strong></td>
-        <td>O resync restaurava o padrão se não houvesse preset carregado.</td>
-        <td>Valores manuais agora sobrevivem ao resync.</td>
+        <td><strong>Ganho ADC "sem efeito"</strong></td>
+        <td>O resync restaurava o padrão de fábrica se não houvesse preset carregado.</td>
+        <td>Valores ajustados de ganho agora sobrevivem e são restaurados após o reset.</td>
       </tr>
       <tr>
         <td><strong>Overflow horizontal mobile</strong></td>
-        <td>O <code>&lt;fieldset&gt;</code> ignorava propriedades flex/grid.</td>
-        <td>CSS ajustado na UI (<code>min-width: 0</code> + grid minmax).</td>
+        <td>A tag <code>&lt;fieldset&gt;</code> ignorava propriedades grid/flex e passava da tela.</td>
+        <td>CSS ajustado na interface (<code>min-width: 0</code> + grid <code>minmax</code>).</td>
       </tr>
     </tbody>
   </table>
 </details>
 
-<h2>📚 Documentação e Instalação</h2>
-<ul>
-  <li><a href="docs/TUTORIAL_INSTALACAO.md"><strong>Tutorial de Instalação</strong></a> — passo a passo para leigos (Wi-Fi ou cabo USB).</li>
-  <li><a href="docs/MANUAL_DE_USO.md"><strong>Manual de Uso</strong></a> — todos os recursos, tela por tela.</li>
-  <li><a href="docs/DESCRITIVO_DETALHADO.md"><strong>Descritivo Detalhado</strong></a> — tudo que foi feito nesta versão.</li>
-  <li><a href="tools/gbsc-updater/README.md"><strong>GBSC Updater</strong></a> — programa para gravar o firmware informando apenas o IP da GBS.</li>
-</ul>
+<br>
 
-<hr>
+<h2>💻 Ferramentas e Documentação</h2>
+<ul>
+  <li><strong>GBSC Updater:</strong> Programa próprio para Windows (ou Python em qualquer OS). Atualiza via Wi-Fi (OTA) informando apenas o IP, ou grava via USB na primeira instalação. Lida automaticamente com o serviço OTA do ESP8266 e contorna o Firewall do Windows.</li>
+  <li><strong>Pipeline de Mídia:</strong> Script <code>make_icon_animation.py</code> que gera automaticamente o código em C++ (<code>OLEDIconAnimations.cpp</code>) a partir dos assets.</li>
+  <li><strong>Documentação Inclusa:</strong> Manual de Uso, Tutorial de Instalação passo a passo (Wi-Fi/USB) e este descritivo técnico.</li>
+</ul>
 
 <h2>📌 Pendências Conhecidas (Roadmap)</h2>
 <ul>
-  <li><strong>Offset por Canal (Nível de Preto):</strong> A ideia de ajustar o offset por canal ADC (R/G/B) está mapeada. Os registradores já existem no código, mas a interação com a rotina de auto-calibração precisa de mais testes.</li>
-  <li><strong>Automação para Switchs Scart \ Video Componente:</strong> Em desenvolvimento.</li>
-</ul>
-
-<br>
-<div align="center">
-  <p><em>Desenvolvido para a comunidade de hardware retro no Brasil.</em></p>
-</div>
-
-Documentation: https://ramapcsx2.github.io/gbs-control/
+  <li><strong>Offset por Canal (Nível de Preto):</strong> A ideia de ajustar o offset por canal ADC está mapeada (registradores já existem no código), mas a interação com a rotina de auto-calibração precisa de mais testes.</li>
+  <li><strong>Automação para Switches SCART / Componente:</strong> Em fase de mapeamento/desenvolvimento.</li>
+  <li><strong>Menu OLED:</strong> Atualmente restrito ao PT-BR (textos baseados em bitmaps pré-desenhados).</li>
+  </ul>
