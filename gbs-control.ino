@@ -237,11 +237,16 @@ static uint8_t lastSegment = 0xFF; // GBS segment for direct access
 
 #if defined(ESP8266) && ENABLE_WIFI
 // serial mirror class for websocket logs
+// Upstream used 20000 (logs) / 14000 (status ping). This build idles at
+// ~20KB free, so those limits dropped the websocket on every command and the
+// developer console stayed empty. 11000 still leaves room for the small
+// broadcast buffers (text frames are a few dozen bytes).
+#define WS_LOG_MIN_HEAP 11000
 class SerialMirror : public Stream
 {
     size_t write(const uint8_t *data, size_t size)
     {
-        if (ESP.getFreeHeap() > 20000) {
+        if (ESP.getFreeHeap() > WS_LOG_MIN_HEAP) {
             webSocket.broadcastTXT(data, size);
         } else {
             webSocket.disconnect();
@@ -252,7 +257,7 @@ class SerialMirror : public Stream
 
     size_t write(const char *data, size_t size)
     {
-        if (ESP.getFreeHeap() > 20000) {
+        if (ESP.getFreeHeap() > WS_LOG_MIN_HEAP) {
             webSocket.broadcastTXT(data, size);
         } else {
             webSocket.disconnect();
@@ -263,7 +268,7 @@ class SerialMirror : public Stream
 
     size_t write(uint8_t data)
     {
-        if (ESP.getFreeHeap() > 20000) {
+        if (ESP.getFreeHeap() > WS_LOG_MIN_HEAP) {
             webSocket.broadcastTXT(&data, 1);
         } else {
             webSocket.disconnect();
@@ -274,7 +279,7 @@ class SerialMirror : public Stream
 
     size_t write(char data)
     {
-        if (ESP.getFreeHeap() > 20000) {
+        if (ESP.getFreeHeap() > WS_LOG_MIN_HEAP) {
             webSocket.broadcastTXT(&data, 1);
         } else {
             webSocket.disconnect();
@@ -7846,7 +7851,7 @@ void updateWebSocketData()
             }
 
             // send ping and stats
-            if (ESP.getFreeHeap() > 14000) {
+            if (ESP.getFreeHeap() > WS_LOG_MIN_HEAP) {
                 webSocket.broadcastTXT(toSend, MESSAGE_LEN);
             } else {
                 webSocket.disconnect();

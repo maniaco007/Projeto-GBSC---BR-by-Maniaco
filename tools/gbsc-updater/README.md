@@ -12,8 +12,8 @@ Instruções para leigos: [`docs/TUTORIAL_INSTALACAO.md`](../../docs/TUTORIAL_IN
 ```bash
 pip install esptool
 python gbsc_updater.py                              # abre a janela
-python gbsc_updater.py --ota 192.168.0.70 firmware/GBSC-PTBR-v1.0.1.bin
-python gbsc_updater.py --usb COM5 firmware/GBSC-PTBR-v1.0.1.bin
+python gbsc_updater.py --ota 192.168.0.70 firmware/GBSC-PTBR-v1.0.2.bin
+python gbsc_updater.py --usb COM5 firmware/GBSC-PTBR-v1.0.2.bin
 ```
 
 ## Gerando o `.exe` (Windows)

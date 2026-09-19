@@ -65,6 +65,7 @@ Registro completo do que foi feito nesta versão do firmware GBS-Control (chip T
 | Aparelho reiniciava ao salvar preset com ícone | Variáveis grandes na pilha de um handler assíncrono (estouro de pilha) | Variáveis movidas para memória estática |
 | Nomes longos cortados no protetor de tela | Fonte fixa | Fonte automática (item 5) |
 | Ganho ADC "sem efeito" | O reset de fábrica do ADC era reaplicado a cada resync quando não havia preset customizado carregado | O ganho ajustado passa a ser restaurado após o reset |
+| Console do modo Developer vazio | O firmware derruba o WebSocket quando a memória livre cai abaixo de 20 KB (limite do upstream) e esta versão fica em ~20–24 KB; além disso, dois buffers estáticos de 2,3 KB ocupavam RAM | Buffers movidos para o heap por requisição e limite de log reduzido para 11 KB (`WS_LOG_MIN_HEAP`) |
 | Overflow horizontal do seletor no celular | O `<fieldset>` tem largura mínima implícita | `min-width: 0` + grid com `minmax(0, 1fr)` |
 | Voltava para a página 1 ao escolher o slot vazio | O "pulo para a página do perfil ativo" disparava de novo quando o aparelho re-sincronizava o perfil ativo | O pulo só vale na abertura; depois de qualquer navegação/toque a página não muda sozinha |
 
