@@ -1,7 +1,9 @@
 <div align="center">
   <h1>🎮 GBS-Control PT-BR</h1>
-  <img width="430" height="890" alt="image" src="https://github.com/user-attachments/assets/20d8317b-a3f9-400b-9a3c-2786cef7beb5" />
-<img width="429" height="890" alt="image" src="https://github.com/user-attachments/assets/4200d12c-4bb3-441f-a1df-8953fcfcbd89" />
+ <p align="center">
+  <img width="49%" alt="image" src="https://github.com/user-attachments/assets/20d8317b-a3f9-400b-9a3c-2786cef7beb5" />
+  <img width="49%" alt="image" src="https://github.com/user-attachments/assets/4200d12c-4bb3-441f-a1df-8953fcfcbd89" />
+</p>
 
 
 
