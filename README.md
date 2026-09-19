@@ -122,7 +122,7 @@
 <ul>
   <li><strong>GBSC Updater:</strong> Programa próprio para Windows (ou Python em qualquer OS). Atualiza via Wi-Fi (OTA) informando apenas o IP, ou grava via USB na primeira instalação. Lida automaticamente com o serviço OTA do ESP8266 e contorna o Firewall do Windows.</li>
   <li><strong>Pipeline de Mídia:</strong> Script <code>make_icon_animation.py</code> que gera automaticamente o código em C++ (<code>OLEDIconAnimations.cpp</code>) a partir dos assets.</li>
-  <li><strong>Documentação Inclusa:</strong> Manual de Uso, Tutorial de Instalação passo a passo (Wi-Fi/USB) e este descritivo técnico.</li>
+  <li><strong>Documentação Inclusa:</strong> <a href="https://github.com/maniaco007/Projeto-GBSC---BR-by-Maniaco/blob/ptbr-import/docs/MANUAL_DE_USO.md">Manual de Uso</a>, <a href="https://github.com/maniaco007/Projeto-GBSC---BR-by-Maniaco/blob/ptbr-import/docs/TUTORIAL_INSTALACAO.md">Tutorial de Instalação</a> passo a passo (Wi-Fi/USB) e este <a href="https://github.com/maniaco007/Projeto-GBSC---BR-by-Maniaco/blob/ptbr-import/docs/DESCRITIVO_DETALHADO.md">descritivo técnico</a>.</li>
 </ul>
 
 <h2>📌 Pendências Conhecidas (Roadmap)</h2>
