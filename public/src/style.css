@@ -219,6 +219,10 @@ body {
   content: "Vazio";
 }
 
+:root[lang="en"] .gbs-button__slot[gbs-name="Empty"]::before {
+  content: "Empty";
+}
+
 .gbs-button__slot[gbs-conn]:not([gbs-conn=""])::after {
   color: var(--color-primary);
   content: attr(gbs-conn);

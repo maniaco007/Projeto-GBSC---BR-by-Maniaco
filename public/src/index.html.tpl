@@ -907,6 +907,19 @@
             </legend>
             <table class="gbs-preferences">
               <tr>
+                <td colspan="2">
+                  <span gbs-lang-keep>Idioma / Language</span>
+                  <div class="gbs-flex">
+                    <button class="gbs-button gbs-button__control gbs-lang-btn" gbs-lang-value="pt" gbs-lang-keep>
+                      <div>Português (BR)</div>
+                    </button>
+                    <button class="gbs-button gbs-button__control gbs-lang-btn" gbs-lang-value="en" gbs-lang-keep>
+                      <div>English</div>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
                 <td>
                   Perfis Combinados
                   <ul class="gbs-help">

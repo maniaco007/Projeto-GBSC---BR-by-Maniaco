@@ -226,6 +226,10 @@ body {
   content: "Vazio";
 }
 
+:root[lang="en"] .gbs-button__slot[gbs-name="Empty"]::before {
+  content: "Empty";
+}
+
 .gbs-button__slot[gbs-conn]:not([gbs-conn=""])::after {
   color: var(--color-primary);
   content: attr(gbs-conn);
@@ -1692,6 +1696,19 @@ section[name="iconpicker"] {
             </legend>
             <table class="gbs-preferences">
               <tr>
+                <td colspan="2">
+                  <span gbs-lang-keep>Idioma / Language</span>
+                  <div class="gbs-flex">
+                    <button class="gbs-button gbs-button__control gbs-lang-btn" gbs-lang-value="pt" gbs-lang-keep>
+                      <div>Português (BR)</div>
+                    </button>
+                    <button class="gbs-button gbs-button__control gbs-lang-btn" gbs-lang-value="en" gbs-lang-keep>
+                      <div>English</div>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
                 <td>
                   Perfis Combinados
                   <ul class="gbs-help">
@@ -2791,7 +2808,7 @@ const savePreset = () => {
     const currentIndex = currentSlot.getAttribute("gbs-slot-id");
     const currentIconId = GBSControl.slotIcons[currentIndex] || 0;
     const currentConnector = GBSControl.slotConnectors[currentIndex] || 1;
-    gbsPrompt("Nome do slot", GBSControl.structs.slots[currentIndex].name || key, currentConnector)
+    gbsPrompt(t("Nome do slot"), GBSControl.structs.slots[currentIndex].name || key, currentConnector)
         .then(({ name: currentName, connector }) => {
         if (currentName && currentName.trim() !== "Empty") {
             currentSlot.setAttribute("gbs-name", currentName);
@@ -2834,7 +2851,9 @@ const deletePreset = () => {
     if (!slotName || slotName === "Empty") {
         return;
     }
-    const ok = confirm(`Apagar o preset "${slotName}"?\n\nIsso remove todos os arquivos desse slot e desloca os slots seguintes para cima.`);
+    const ok = confirm(isEn()
+        ? `Delete preset "${slotName}"?\n\nThis removes all files of this slot and shifts the following slots up.`
+        : `Apagar o preset "${slotName}"?\n\nIsso remove todos os arquivos desse slot e desloca os slots seguintes para cima.`);
     if (!ok) {
         return;
     }
@@ -2850,12 +2869,202 @@ const deletePreset = () => {
             }, 300);
         }
         else {
-            gbsAlert("Falha ao apagar o preset").catch(() => { });
+            gbsAlert(t("Falha ao apagar o preset")).catch(() => { });
         }
     })
         .catch(() => {
-        gbsAlert("Erro ao apagar o preset").catch(() => { });
+        gbsAlert(t("Erro ao apagar o preset")).catch(() => { });
     });
+};
+// ---- Language selector (PT-BR default, English optional) ----
+// Portuguese text lives directly in the HTML template / code. English is
+// applied on top of it via this exact-text dictionary; anything not listed
+// (slot names, technical labels) stays untouched.
+const I18N_EN = {
+    "Resolução": "Resolution",
+    "Escolha uma resolução de saída entre estas predefinições.": "Choose an output resolution from these presets.",
+    "Sua seleção também será usada na inicialização. 1280x960 é recomendado para fontes NTSC, 1280x1024 para PAL.": "Your selection will also be used for startup. 1280x960 is recommended for NTSC sources, 1280x1024 for PAL.",
+    "Use a opção \"Perfis Combinados\" para alternar entre as duas automaticamente (aba Preferências)": "Use the \"Matched Presets\" option to switch between the two automatically (Preferences tab)",
+    "Selecionar uma resolução também a torna a nova predefinição de inicialização.": "Selecting a resolution also makes it the new startup preset.",
+    "Passagem": "Pass Through",
+    "Perfis": "Presets",
+    "Para salvar suas customizações, primeiro selecione um slot para o novo perfil, depois salve ou carregue nele.": "If you want to save your customizations, first select a slot for your new preset, then save to or load from that slot.",
+    "Selecionar um slot também o torna o perfil de boot.": "Selecting a slot also makes it the new startup preset.",
+    "carregar perfil": "load preset",
+    "salvar perfil": "save preset",
+    "apagar perfil": "delete preset",
+    "Ganho ADC (brilho)": "ADC Gain (brightness)",
+    "Ganho +/- ajusta o ganho do perfil carregado atualmente.": "Gain +/- adjusts the gain for the currently loaded preset.",
+    "Ganho Automático aumenta o ganho até áreas claras virarem brancas, depois reduz quando detecta clipping. Calibre por alguns segundos numa tela branca.": "Auto Gain increases gain so bright areas are displayed as white, then decreases it when clipping is detected. Calibrate for a few seconds on a white screen.",
+    "ganho": "gain",
+    "Ganho Auto": "Auto Gain",
+    "Controles de Imagem": "Picture Control",
+    "mover": "move",
+    "escalar": "scale",
+    "bordas": "borders",
+    "Filtros": "Filters",
+    "intensidade": "intensity",
+    "filtro de linha": "line filter",
+    "Scanlines só funcionam com fontes 240p, ou 480i com desentrelaçamento Bob.": "Scanlines only work with 240p sources, or 480i with Bob deinterlacing.",
+    "O filtro de linha elimina artefatos de pixels quadriculados ao escalar acima de 480p, recomendado.": "Line Filter eliminates blocky-pixel artifacts when upscaling beyond 480p, and is recommended.",
+    "realce": "peaking",
+    "resposta de degrau": "step response",
+    "Realce aumenta o contraste em transições horizontais de brilho, recomendado.": "Peaking increases contrast around horizontal brightness steps, and is recommended.",
+    "Resposta de degrau aumenta a nitidez das transições horizontais de cor, recomendado.": "Step Response increases the sharpness of horizontal color steps, and is recommended.",
+    "Configurações": "Settings",
+    "Perfis Combinados": "Matched Presets",
+    "Se ativo, usa 1280x960 para NTSC 60 e 1280x1024 para PAL 50 (não se aplica para perfis 720p / 1080p).": "If enabled, default to 1280x960 for NTSC 60 and 1280x1024 for PAL 50 (does not apply for 720p / 1080p presets).",
+    "Altura Total": "Full Height",
+    "Alguns perfis não usam toda a resolução vertical de saída, deixando algumas linhas pretas.": "Some presets default to not using the entire vertical output resolution, leaving some lines black.",
+    "Com Altura Total ativa, esses perfis escalam para preencher mais a altura da tela.": "With Full Height enabled, these presets will instead scale to fill more of the screen height.",
+    "(Atualmente afeta apenas 1920 x 1080)": "(This currently only affects 1920 x 1080)",
+    "Baixa Res: Usar Upscaling": "Low Res: Use Upscaling",
+    "Entrada VGA de baixa resolução: Passagem direta ou Upscale": "Low Resolution VGA input: Pass-through or Upscale",
+    "Fontes de baixa resolução podem ser passadas diretamente ou escaladas.": "Low resolution sources can be either passed on directly or get upscaled.",
+    "Upscaling pode ter problemas de borda/escala, mas é mais compatível com telas.": "Upscaling may have some border / scaling issues, but is more compatible with displays.",
+    "Taxas de atualização diferentes de 60Hz ainda não têm bom suporte.": "Also, refresh rates other than 60Hz are not well supported yet.",
+    "\"Baixa resolução\" hoje é definida como menor ou igual a 640x480 (525 linhas ativas).": "\"Low resolution\" is currently set at below or equal to 640x480 (525 active lines).",
+    "Saída RGBHV/Componente": "Output RGBHV/Component",
+    "O modo de saída padrão é RGBHV, ideal para cabos VGA ou conversores HDMI.": "The default output mode is RGBHV, suitable for use with VGA cables or HDMI converters.",
+    "Um modo experimental YPbPr também pode ser selecionado. A compatibilidade ainda é instável.": "An experimental YPbPr mode can also be selected. Compatibility is still spotty.",
+    "Visor OLED: Exibição": "OLED Display: Content",
+    "O que a telinha OLED mostra na tela principal quando um preset customizado (slot A-Z) está carregado.": "What the OLED screen shows on the main screen while a custom preset (slot A-Z) is loaded.",
+    "Sem preset carregado, a tela continua mostrando a resolução normalmente. Também vale pro protetor de tela: no modo Nome ele usa a animação padrão, no modo Ícone ele anima o ícone do preset (quando existe uma animação cadastrada pra ele).": "With no preset loaded, the screen keeps showing the resolution as usual. This also applies to the screensaver: in Name mode it uses the default animation, in Icon mode it animates the preset's icon (when an animation exists for it).",
+    "Nome": "Name",
+    "Ícone": "Icon",
+    "Perfil de Inicialização": "Startup Profile",
+    "Por padrão a GBS lembra e recarrega o último preset/resolução usado. Escolha um perfil aqui pra sempre carregar ele ao ligar, independente do que estava ativo antes de desligar.": "By default the GBS remembers and reloads the last preset/resolution used. Pick a profile here to always load it on power-up, regardless of what was active before shutdown.",
+    "Desativado (lembrar o último usado)": "Disabled (remember the last used)",
+    "Taxa de Quadros: Forçar PAL 50Hz para 60Hz": "Output Frame Rate: Force PAL 50Hz to 60Hz",
+    "Se sua TV não suporta fontes 50Hz (exibindo formato desconhecido, independente do perfil), tente esta opção.": "If your TV does not support 50Hz sources (displaying unknown format, no matter the preset), try this option.",
+    "O frame rate não será tão suave. Requer reinício.": "The frame rate will not be as smooth. Reboot required.",
+    "Desabilitar Gerador de Clock Externo": "Disable External Clock Generator",
+    "Por padrão o gerador de clock externo é ativado quando instalado.": "By default the external clock generator is enabled when installed.",
+    "Você pode desativá-lo se tiver problemas com outras opções, como Forçar PAL 50Hz para 60Hz. Requer reinício.": "You can disable it if you have issues with other options, e.g Force PAL 50Hz to 60Hz. Reboot required.",
+    "Calibração ADC": "ADC calibration",
+    "O Gbscontrol calibra os offsets do ADC no boot.": "Gbscontrol calibrates the ADC offsets on startup.",
+    "Em caso de problemas de desvio de cor, tente desabilitar esta função.": "In case of color shift problems, try disabling this function.",
+    "Trava de FrameTime": "FrameTime Lock",
+    "Esta opção mantém alinhados os tempos de entrada e saída, corrigindo a linha de \"tearing\" horizontal que pode aparecer.": "This option keeps the input and output timings aligned, fixing the horizontal tear line that can appear sometimes.",
+    "Dois métodos disponíveis. Tente alternar se a tela ficar preta ou deslocar verticalmente.": "Two methods are available. Try switching methods if your display goes blank or shifts vertically.",
+    "Travar FrameTime": "Active FrameTime Lock",
+    "Alternar Método de Trava": "Switch Lock Method",
+    "Método de Desentrelaçamento": "Deinterlace Method",
+    "O Gbscontrol detecta conteúdo entrelaçado e alterna o desentrelaçamento automaticamente.": "Gbscontrol detects interlaced content and automatically toggles deinterlacing.",
+    "Método Bob: praticamente sem desentrelaçamento, sem lag adicional mas cintila, pode combinar com scanlines": "Bob Method: essentially no deinterlacing, no added lag but flickers, can be combined with scanlines",
+    "Adaptativo por Movimento: remove o flicker mas mostra alguns artefatos em detalhes em movimento": "Motion Adaptive: removes flicker and shows some artefacts in moving details",
+    "Se possível, configure a fonte para saída progressiva. Caso contrário, recomenda-se o Adaptativo por Movimento.": "If possible, configure the source for progressive output. Otherwise, using Motion Adaptive is recommended.",
+    "Adaptativo por Movimento": "Motion Adaptive",
+    "Modo Desenvolvedor": "Developer Mode",
+    "Habilita o menu de desenvolvedor com várias ferramentas de debug": "Enables the developer menu which contains various debugging tools",
+    "Salvar Filtros por Slot": "Save Filtering Per Slot",
+    "Quando ativo, slots salvos recuperam suas próprias preferências de filtro.": "When enabled, saved slots recover their own filter preferences.",
+    "Quando desativo, slots salvos mantêm os filtros atuais.": "When disabled, saved slots maintain current filter settings.",
+    "Sistema": "System",
+    "Habilitar OTA": "Enable OTA",
+    "Reiniciar": "Restart",
+    "Restaurar Padrões": "Reset Defaults",
+    "Cópia [para o mesmo aparelho]": "Backup [intended for same device]",
+    "Cópia / Restauração dos arquivos de configuração": "Backup / Restore of configuration files",
+    "A cópia é válida apenas no aparelho atual": "Backup is valid for current device only",
+    "Baixar": "Download",
+    "Restaurar": "Restore",
+    "Ponto de Acesso": "Access Point",
+    "Estação": "Station",
+    "Selecionar Rede": "Select SSID",
+    "Conectar à Rede": "Connect to SSID",
+    "Conectar": "Connect",
+    "Origem de vídeo": "Video source",
+    "Componente": "Component",
+    "CANCELAR": "CANCEL",
+    "ALERTA": "ALERT",
+    "Escolha um ícone": "Choose an icon",
+    "Saída": "Output",
+    "senha": "password",
+    "Nome do slot": "Slot name",
+    "Falha ao apagar o preset": "Failed to delete the preset",
+    "Erro ao apagar o preset": "Error deleting the preset",
+    "Arquivo de cópia inválido": "Invalid backup file",
+    "Reiniciando o GBSControl.\nAguarde o wifi reconectar e clique OK": "Restarting GBSControl.\nWait for wifi to reconnect and click OK",
+    "Trocando para o modo Ponto de Acesso. Conecte-se ao SSID gbscontrol e clique OK": "Switching to Access Point mode. Connect to the gbscontrol SSID and click OK",
+};
+let currentLang = "pt";
+const isEn = () => currentLang === "en";
+const t = (pt) => (isEn() && I18N_EN[pt]) || pt;
+const i18nOriginals = new WeakMap();
+const i18nAttrOriginals = new WeakMap();
+const normalizeI18nKey = (s) => s.replace(/\s+/g, " ").trim();
+const translateTextNodes = () => {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) {
+        nodes.push(walker.currentNode);
+    }
+    nodes.forEach((node) => {
+        const parent = node.parentElement;
+        if (!parent ||
+            parent.closest("script, style, textarea, .gbs-icon, [gbs-lang-keep]")) {
+            return;
+        }
+        if (!i18nOriginals.has(node)) {
+            i18nOriginals.set(node, node.nodeValue || "");
+        }
+        const original = i18nOriginals.get(node);
+        const translated = isEn() ? I18N_EN[normalizeI18nKey(original)] : undefined;
+        if (translated) {
+            const lead = original.match(/^\s*/)[0];
+            const trail = original.match(/\s*$/)[0];
+            node.nodeValue = lead + translated + trail;
+        }
+        else if (node.nodeValue !== original) {
+            node.nodeValue = original;
+        }
+    });
+    nodelistToArray(document.querySelectorAll("[placeholder]")).forEach((el) => {
+        if (!i18nAttrOriginals.has(el)) {
+            i18nAttrOriginals.set(el, el.getAttribute("placeholder") || "");
+        }
+        const original = i18nAttrOriginals.get(el);
+        el.setAttribute("placeholder", (isEn() && I18N_EN[original]) || original);
+    });
+};
+const applyLanguage = (lang) => {
+    currentLang = lang;
+    document.documentElement.setAttribute("lang", lang === "en" ? "en" : "pt-BR");
+    try {
+        localStorage.setItem("gbs-lang", lang);
+    }
+    catch (e) { }
+    translateTextNodes();
+    nodelistToArray(document.querySelectorAll(".gbs-lang-btn")).forEach((b) => {
+        if (b.getAttribute("gbs-lang-value") === lang) {
+            b.setAttribute("active", "");
+        }
+        else {
+            b.removeAttribute("active");
+        }
+    });
+    if (GBSControl.structs) {
+        updateSlotNames();
+    }
+};
+const initLanguageSelector = () => {
+    let stored = null;
+    try {
+        stored = localStorage.getItem("gbs-lang");
+    }
+    catch (e) { }
+    const initial = stored === "en" || stored === "pt"
+        ? stored
+        : (navigator.language || "pt").toLowerCase().indexOf("pt") === 0
+            ? "pt"
+            : "en";
+    nodelistToArray(document.querySelectorAll(".gbs-lang-btn")).forEach((button) => {
+        button.addEventListener("click", () => {
+            applyLanguage(button.getAttribute("gbs-lang-value"));
+        });
+    });
+    applyLanguage(initial);
 };
 const initOledPresetDisplayButtons = () => {
     const buttons = nodelistToArray(document.querySelectorAll(".gbs-oled-preset-display-btn"));
@@ -2939,7 +3148,7 @@ const updateSlotNames = () => {
         if (use) {
             use.setAttribute("href", `#gbs-slot-icon-${iconId}`);
         }
-        el.setAttribute("gbs-conn", CONNECTOR_LABELS[GBSControl.slotConnectors[i]] || "");
+        el.setAttribute("gbs-conn", t(CONNECTOR_LABELS[GBSControl.slotConnectors[i]] || ""));
     }
     sortSlotButtonsAlphabetically();
     populateStartupPresetOptions();
@@ -3209,7 +3418,7 @@ const doRestore = (file) => {
     const headerCheck = fileBuffer.slice(4, 6);
     if (headerCheck[0] !== 0x7b || headerCheck[1] !== 0x22) {
         backupInput.setAttribute("disabled", "");
-        gbsAlert("Arquivo de cópia inválido")
+        gbsAlert(t("Arquivo de cópia inválido"))
             .then(() => {
             backupInput.removeAttribute("disabled");
         }, () => {
@@ -3247,7 +3456,7 @@ const doRestore = (file) => {
     serial(funcs).then(() => {
         GBSControl.ui.progressRestore.setAttribute("gbs-progress", ``);
         loadUser("a").then(() => {
-            gbsAlert("Reiniciando o GBSControl.\nAguarde o wifi reconectar e clique OK")
+            gbsAlert(t("Reiniciando o GBSControl.\nAguarde o wifi reconectar e clique OK"))
                 .then(() => {
                 window.location.reload();
             })
@@ -3311,7 +3520,9 @@ const wifiConnect = () => {
         method: "POST",
         body: formData,
     }).then(() => {
-        gbsAlert(`O GBSControl vai reiniciar e conectar em ${ssid}. Aguarde alguns segundos e clique OK`)
+        gbsAlert(isEn()
+            ? `GBSControl will restart and connect to ${ssid}. Wait a few seconds and click OK`
+            : `O GBSControl vai reiniciar e conectar em ${ssid}. Aguarde alguns segundos e clique OK`)
             .then(() => {
             window.location.href = "http://gbscontrol.local/";
         })
@@ -3376,7 +3587,7 @@ const wifiSetAPMode = () => {
         method: "POST",
         body: formData,
     }).then(() => {
-        gbsAlert("Trocando para o modo Ponto de Acesso. Conecte-se ao SSID gbscontrol e clique OK")
+        gbsAlert(t("Trocando para o modo Ponto de Acesso. Conecte-se ao SSID gbscontrol e clique OK"))
             .then(() => {
             window.location.href = "http://192.168.4.1";
         })
@@ -3805,6 +4016,7 @@ const initUI = () => {
     initConnectorPicker();
     initOledPresetDisplayButtons();
     initStartupPresetSelect();
+    initLanguageSelector();
 };
 const main = () => {
     const ip = location.hostname;
