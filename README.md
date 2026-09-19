@@ -44,10 +44,6 @@
       <td>Ao salvar um perfil, você escolhe o conector (SCART / VGA / Componente / RGBS). A informação é exibida no card do preset.</td>
     </tr>
     <tr>
-      <td><strong>Link Perfil ↔ Entrada</strong></td>
-      <td>O GBS-C lembra qual preset foi usado em cada entrada física e o recarrega automaticamente ao detectar a fonte.</td>
-    </tr>
-    <tr>
       <td><strong>Perfil de Inicialização</strong></td>
       <td>Força um slot específico para ser carregado sempre que o aparelho liga (ignorando o "último usado").</td>
     </tr>
@@ -131,6 +127,16 @@
     </tbody>
   </table>
 </details>
+
+<h2>📚 Documentação e Instalação</h2>
+<ul>
+  <li><a href="docs/TUTORIAL_INSTALACAO.md"><strong>Tutorial de Instalação</strong></a> — passo a passo para leigos (Wi-Fi ou cabo USB).</li>
+  <li><a href="docs/MANUAL_DE_USO.md"><strong>Manual de Uso</strong></a> — todos os recursos, tela por tela.</li>
+  <li><a href="docs/DESCRITIVO_DETALHADO.md"><strong>Descritivo Detalhado</strong></a> — tudo que foi feito nesta versão.</li>
+  <li><a href="tools/gbsc-updater/README.md"><strong>GBSC Updater</strong></a> — programa para gravar o firmware informando apenas o IP da GBS.</li>
+</ul>
+
+<hr>
 
 <h2>📌 Pendências Conhecidas (Roadmap)</h2>
 <ul>

@@ -2,6 +2,8 @@
 
 Atualizado em 2026-09-18.
 
+> **Nota (2026-09-19):** este arquivo é o histórico de desenvolvimento. Vários recursos descritos aqui (Ganho ADC por canal, Entrada Manual, Realce de Scanlines, Timer de Desligar, perfis de fábrica embarcados) foram **removidos** na versão final, e o `feature-lab` já foi consolidado em `ptbr-import`. Para o estado atual, veja o [Manual de Uso](MANUAL_DE_USO.md) e o [Descritivo Detalhado](DESCRITIVO_DETALHADO.md).
+
 ## Visão Geral
 
 Este projeto é uma tradução e evolução em PT-BR do firmware [GBS-Control](https://github.com/ramapcsx2/gbs-control) (upstream original), que roda num ESP8266 (D1 Mini) e controla o chip Tvia Trueview5725 (TV5725) — o "cérebro" de placas upscaler/linedoubler tipo GBS-8200/GBS-C, usadas pra converter vídeo analógico de consoles retrô (RGB/Componente) em VGA/HDMI com baixa latência.
@@ -122,7 +124,7 @@ Essa migração também foi a origem de um bug corrigido nesta rodada: um arquiv
 - [x] Menu OLED: aba Perfis funcionando, nome/ícone do preset ativo na tela principal, nomes longos rolando e alinhados à esquerda, fonte do protetor de tela (modo Nome) encolhe automaticamente pra não cortar nomes longos
 - [x] Protetor de tela animado por preset (modo Ícone): 51 dos 56 ícones têm animação de bounce gerada automaticamente (threshold adaptativo + contorno de silhueta); 5 ficaram ilegíveis em 1-bit e não têm animação (caem no protetor de tela por nome)
 - [x] Indicador de limite de ganho ADC (número fica vermelho no limite ±40) e Perfil de Inicialização (força um slot específico ao ligar) — ideias do RetroTINK
-- [x] Link Perfil↔Entrada (preset lembra e força a entrada RGB/RGBS ou Componente usada) e aviso de mudança de formato no OLED por 3s — ideias do OSSC
+- [x] Aviso de mudança de formato no OLED por 3s — ideia do OSSC. (O "Link Perfil↔Entrada" foi implementado, mas só atuava junto com a Entrada Manual, removida depois; hoje o firmware apenas anota o último perfil por entrada, sem efeito.)
 - [x] Origem de vídeo por preset (SCART/VGA/Componente/RGBS) escolhida ao salvar, mostrada no card do preset entre o nome e o ícone
 - [ ] **`feature-lab` ainda não foi consolidado em `ptbr-import`** — aguardando terminar de testar no aparelho real antes de mesclar
 - [x] Removida a feature de "Perfis Padrão do Projeto" (5 presets de fábrica embarcados no firmware, `custom_presets.h`) — em vez de regerar os ids de ícone, decidimos tirar do firmware: removidos o arquivo, os 3 endpoints (`/gbs/custom-presets-*`), o botão/fieldset na webui e o script gerador (`scripts/update_custom_presets.py`)
