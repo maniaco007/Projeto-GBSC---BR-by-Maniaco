@@ -113,7 +113,3 @@ Recarregue a página da webui — pronto! ✅
 Se quiser voltar ao GBS-Control original, baixe o `.bin` dele no projeto oficial (`ramapcsx2/gbs-control`) e grave com o mesmo **GBSC-Updater** (botão **Escolher...** para selecionar o arquivo), pelo Caminho A ou B.
 
 ---
-
-## Para quem quer compilar sozinho (avançado)
-
-O código-fonte está neste repositório. Você precisa do **PlatformIO** e roda `pio run -e d1_mini`; o firmware sai em `.pio/build/d1_mini/firmware.bin`. A interface web é gerada em `public/` (`npm run build`). O atualizador está em `tools/gbsc-updater/` (Python; `build_exe.bat` gera o `.exe`).
