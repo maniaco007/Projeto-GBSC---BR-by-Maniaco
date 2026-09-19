@@ -17,6 +17,8 @@
 #include "presetHdBypassSection.h"
 #include "ofw_RGBS.h"
 #include "options.h"
+#include <memory>
+#include <new>
 #include "slot.h"
 
 #include <Wire.h>
@@ -9850,13 +9852,20 @@ void startWebserver()
             int params = request->params();
 
             if (params > 0) {
-                // static: this handler runs from the async web server's TCP
-                // callback chain, which has much less stack headroom than
-                // the main loop() task. slotsObject + icons + inputs
-                // together are ~2.5KB; keeping them off the stack avoids an
-                // overflow/crash (seen as the device rebooting right when
-                // saving a preset with an icon selected).
-                static SlotMetaArray slotsObject;
+                // This handler runs from the async web server's TCP callback
+                // chain, which has much less stack headroom than loop(); the
+                // 2.3KB slot table on the stack overflowed (device rebooted
+                // while saving a preset with an icon). It is NOT a static
+                // either: 2 permanent copies of it took the free heap under
+                // the 20KB mark below which SerialMirror drops every
+                // websocket client (dev console went silent). Heap-allocate
+                // it for the duration of the request instead.
+                std::unique_ptr<SlotMetaArray> slotsHolder(new (std::nothrow) SlotMetaArray);
+                if (!slotsHolder) {
+                    goto fail;
+                }
+                SlotMetaArray &slotsObject = *slotsHolder;
+                memset(&slotsObject, 0, sizeof(slotsObject));
                 File slotsBinaryFileRead = LittleFS.open(SLOTS_FILE, "r");
 
                 if (slotsBinaryFileRead) {
@@ -9990,10 +9999,15 @@ void startWebserver()
                 Ascii8 nextSlot;
                 auto currentSlot = slotIndexMap.indexOf(slot);
 
-                // static: see the comment in /slot/save - this handler also
-                // runs from the async web server's callback chain, where a
-                // couple KB of stack locals risks an overflow/reboot.
-                static SlotMetaArray slotsObject;
+                // Heap-allocated for the request only: see the comment in
+                // /slot/save (not on the stack, not a permanent static).
+                std::unique_ptr<SlotMetaArray> slotsHolder(new (std::nothrow) SlotMetaArray);
+                if (!slotsHolder) {
+                    request->send(200, "application/json", "false");
+                    return;
+                }
+                SlotMetaArray &slotsObject = *slotsHolder;
+                memset(&slotsObject, 0, sizeof(slotsObject));
                 File slotsBinaryFileRead = LittleFS.open(SLOTS_FILE, "r");
                 slotsBinaryFileRead.read((byte *)&slotsObject, sizeof(slotsObject));
                 slotsBinaryFileRead.close();
@@ -10133,6 +10147,11 @@ void startWebserver()
             }
         }
         request->send(200, "application/json", result ? "true" : "false");
+    });
+
+    server.on("/gbs/heap", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(200, "application/json",
+                      String("{\"free\":") + ESP.getFreeHeap() + ",\"maxBlock\":" + ESP.getMaxFreeBlockSize() + "}");
     });
 
     server.on("/spiffs/upload", HTTP_GET, [](AsyncWebServerRequest *request) {
