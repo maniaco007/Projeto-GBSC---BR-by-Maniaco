@@ -8,7 +8,7 @@
 
 
   <p><b>Versão brasileira e aprimorada do firmware do upscaler Tvia Trueview5725 (ESP8266 / Wemos D1 mini)</b></p>
-  <p>Mantida por <strong>Willian Nascimento (Maniaco Game Room)</strong></p>
+  <p>Mantida por <strong>Willian Nascimento (<a href="https://www.maniacogameroom.com.br/">Maniaco Game Room</a>)</strong></p>
   <p>
     Tradução completa para PT-BR, sistema de perfis com automações avançadas, novos ícones para o display OLED e correções profundas no sistema de arquivos. Desenvolvido para a comunidade de hardware retro no Brasil.
   </p>
