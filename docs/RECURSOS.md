@@ -1,8 +1,6 @@
 # GBS-Control PT-BR by Maniaco — Documentação de Recursos
 
-Atualizado em 2026-09-18.
-
-> **Nota (2026-09-19):** este arquivo é o histórico de desenvolvimento. Vários recursos descritos aqui (Ganho ADC por canal, Entrada Manual, Realce de Scanlines, Timer de Desligar, perfis de fábrica embarcados) foram **removidos** na versão final, e o `feature-lab` já foi consolidado em `ptbr-import`. Para o estado atual, veja o [Manual de Uso](MANUAL_DE_USO.md) e o [Descritivo Detalhado](DESCRITIVO_DETALHADO.md).
+Atualizado em 18-09-2029.
 
 ## Visão Geral
 
@@ -17,8 +15,6 @@ Este projeto é uma tradução e evolução em PT-BR do firmware [GBS-Control](h
 | `master` | Espelho do upstream original (inglês, sem modificações) |
 | `ptbr-import` | Base "de produção": tradução completa PT-BR + logo próprio + presets embarcados |
 | `feature-lab` | Onde os novos recursos (Tier 1/2 e além) estão sendo desenvolvidos e testados no aparelho real, antes de consolidar de volta em `ptbr-import` |
-
-O firmware atualmente instalado no seu aparelho é o `feature-lab`, ainda em fase de testes.
 
 ## Como Atualizar o Firmware (OTA)
 
@@ -39,10 +35,6 @@ Todos ficam nas abas **Preferências** e **Sistema**, com botões do tipo "segur
 
 | Controle | Onde | O que faz |
 | --- | --- | --- |
-| Ganho ADC (R/G/B) | Preferências | Ajuste fino independente de brilho por canal de cor, em relação ao valor de calibração do chip (0x7B). Limite de ±40. |
-| Entrada Manual | Preferências | Força a entrada RGB/RGBS ou Componente em vez da detecção automática — útil com as duas fontes plugadas ao mesmo tempo |
-| Realce de Scanlines | Filtros | Ganho extra de luminosidade quando as scanlines estão ligadas, pra compensar o escurecimento que o efeito de mistura das linhas causa |
-| Timer de Desligar Saída | Sistema | Desliga o sinal de vídeo depois de N minutos sem sinc/atividade (0 = desativado) — tipo um protetor de tela real pro display externo |
 | Ajuste Fino de HTotal (++/--) | Developer | Trim manual do HTotal que agora é **persistido** e reaplicado automaticamente depois de carregar um preset fixo (antes se perdia a cada troca de preset) |
 | Visor OLED: Preset Carregado | Preferências | Escolhe se a telinha do aparelho mostra o **nome** do preset customizado ativo ou um **ícone** genérico, no lugar da resolução — só aparece quando um preset customizado está carregado |
 
@@ -62,8 +54,6 @@ A aba **Perfis** da webui guarda até 72 slots customizados (A-Z, a-z, 0-9...), 
 **Carregar um perfil:** seleciona o slot na lista e clica em **carregar perfil**.
 
 **Apagar um perfil:** seleciona o slot e clica em **apagar perfil** (pede confirmação — remove os arquivos do slot e desloca os seguintes pra cima).
-
-**Perfis Padrão do Projeto:** botão "importar perfis padrão" que já vem com 5 presets prontos embarcados no firmware (SNES, Mega Drive, PS1, PS2, N64), pra não precisar configurar do zero.
 
 **Seletor de ícone:** grade de ícones (hoje 25 opções, id 0-24) que ficam salvos em `/slot_icons.bin` (1 byte por slot). Esse mesmo id é o que conecta o ícone ao **protetor de tela animado do OLED** (ver seção abaixo) — hoje só o ícone do GameCube (id 9) tem arte real de animação, os outros usam símbolos genéricos abstratos na webui e não têm animação no OLED ainda.
 
@@ -87,11 +77,9 @@ A telinha OLED (SSD1306 128x64) tem um menu navegado pelo encoder rotativo/botõ
 
 **Tela principal (quando ocioso):** por padrão mostra a resolução ativa, taxa de quadros e formato de entrada (RGB/YPbPr). Quando um **preset customizado** está carregado, passa a mostrar o **nome do preset** (ou um ícone genérico de controle, conforme a opção "Visor OLED: Preset Carregado" nas Preferências) no lugar da resolução. Sem preset customizado carregado, o texto de resolução continua exatamente como sempre foi.
 
-Esse comportamento foi corrigido nesta rodada: antes, a aba Perfis não encontrava nenhum preset salvo (bug de um arquivo que ainda tentava abrir os presets pelo sistema de arquivos antigo, SPIFFS, depois da migração pra LittleFS — ver seção de migração abaixo) e o nome do preset ativo nunca aparecia (bug de comparação entre índice do slot e letra ASCII).
-
 ## Protetor de Tela Animado ("GIF" por Preset)
 
-Depois de 3 minutos sem uso, o OLED entra em modo protetor de tela. Se houver um preset customizado carregado **e** o ícone dele já tiver uma animação cadastrada, o protetor de tela mostra essa animação (vários quadros em sequência) em vez do texto padrão "GBS-Control" quicando pela tela. Sem preset customizado, ou ícone sem animação, continua o comportamento padrão. A posição continua trocando aleatoriamente a cada redesenho, pra não queimar pixel do OLED (mesma lógica de sempre).
+Depois de 1 minuto sem uso, o OLED entra em modo protetor de tela. Se houver um preset customizado carregado **e** o ícone dele já tiver uma animação cadastrada, o protetor de tela mostra essa animação (vários quadros em sequência) em vez do texto padrão "GBS-Control" quicando pela tela. Sem preset customizado, ou ícone sem animação, continua o comportamento padrão. A posição continua trocando aleatoriamente a cada redesenho, pra não queimar pixel do OLED (mesma lógica de sempre).
 
 O display é monocromático (1-bit) e não decodifica `.gif` de verdade — a "animação" é uma sequência de bitmaps XBM pré-convertidos e embutidos no firmware (mesma técnica já usada pro logo de boot).
 
@@ -102,15 +90,13 @@ O display é monocromático (1-bit) e não decodifica `.gif` de verdade — a "a
 3. Roda `python3 scripts/make_icon_animation.py`, que regenera `OLEDIconAnimations.cpp` com os quadros de todos os ícones do manifesto.
 4. Recompila e manda o OTA — nenhum outro arquivo precisa ser tocado.
 
-**Prova de conceito já pronta:** o ícone do GameCube (id 9) tem uma animação de 4 quadros 32x32 sintetizada a partir do PNG estático já usado na webui (`assets_in/icons/gamecube_40.png`). Ainda não é arte quadro-a-quadro de verdade, só confirma que o pipeline inteiro funciona.
-
 **Custo de flash:** bem baixo — essa primeira animação (infraestrutura + 4 quadros) usou cerca de 900 bytes dos ~322KB livres. Um ícone típico 32x32 com uns 8-10 quadros fica em torno de 1,3KB; pros ~24 consoles do projeto, isso daria uns 30-40KB no total — tranquilamente dentro do espaço disponível.
 
 ## Migração SPIFFS → LittleFS
 
 O ESP8266 guarda os presets, preferências e ícones num sistema de arquivos dentro da memória flash. O firmware original usava SPIFFS, que está descontinuado no framework do ESP8266 (sem manutenção, mais lento e com mais risco de corromper dados). A migração trocou pra LittleFS — mais rápido e mais resistente a corrupção em quedas de energia.
 
-**O que isso significa na prática:** os dois sistemas de arquivo não são compatíveis no formato bruto da flash, então a primeira vez que o firmware novo liga, ele formata a área de dados (apagando o que estava lá) e recomeça do zero. Por isso um backup completo foi feito antes dessa atualização específica.
+**O que isso significa na prática:** os dois sistemas de arquivo não são compatíveis no formato bruto da flash, então a primeira vez que o firmware novo liga, ele formata a área de dados (apagando o que estava lá) e recomeça do zero.
 
 Essa migração também foi a origem de um bug corrigido nesta rodada: um arquivo (`OLEDMenuImplementation.cpp`, responsável pelo menu físico do OLED) tinha ficado pra trás abrindo os presets pelo SPIFFS antigo, então a aba Perfis do menu OLED nunca encontrava nada, mesmo com presets salvos e visíveis na webui (que já usava LittleFS corretamente).
 
@@ -119,15 +105,10 @@ Essa migração também foi a origem de um bug corrigido nesta rodada: um arquiv
 - [x] Tradução completa da webui e menu OLED pra PT-BR
 - [x] Logo de boot próprio
 - [x] Migração SPIFFS → LittleFS
-- [x] Ganho ADC por canal, trava de entrada, realce de scanlines, timer de desligar tela, trim de HTotal persistente
 - [x] Seleção de ícone por preset na webui (56 ícones com arte real: controles, logos e gabinetes de console)
 - [x] Menu OLED: aba Perfis funcionando, nome/ícone do preset ativo na tela principal, nomes longos rolando e alinhados à esquerda, fonte do protetor de tela (modo Nome) encolhe automaticamente pra não cortar nomes longos
-- [x] Protetor de tela animado por preset (modo Ícone): 51 dos 56 ícones têm animação de bounce gerada automaticamente (threshold adaptativo + contorno de silhueta); 5 ficaram ilegíveis em 1-bit e não têm animação (caem no protetor de tela por nome)
-- [x] Indicador de limite de ganho ADC (número fica vermelho no limite ±40) e Perfil de Inicialização (força um slot específico ao ligar) — ideias do RetroTINK
+- [x] Protetor de tela animado por preset modo ícone ou nome.
 - [x] Aviso de mudança de formato no OLED por 3s — ideia do OSSC. (O "Link Perfil↔Entrada" foi implementado, mas só atuava junto com a Entrada Manual, removida depois; hoje o firmware apenas anota o último perfil por entrada, sem efeito.)
 - [x] Origem de vídeo por preset (SCART/VGA/Componente/RGBS) escolhida ao salvar, mostrada no card do preset entre o nome e o ícone
-- [ ] **`feature-lab` ainda não foi consolidado em `ptbr-import`** — aguardando terminar de testar no aparelho real antes de mesclar
-- [x] Removida a feature de "Perfis Padrão do Projeto" (5 presets de fábrica embarcados no firmware, `custom_presets.h`) — em vez de regerar os ids de ícone, decidimos tirar do firmware: removidos o arquivo, os 3 endpoints (`/gbs/custom-presets-*`), o botão/fieldset na webui e o script gerador (`scripts/update_custom_presets.py`)
 - [ ] Ajuste de OFFSET (nível de preto) por canal ADC (R/G/B) — ideia do OSSC ainda não implementada; os registradores (`ADC_ROFCTRL`/`GOFCTRL`/`BOFCTRL`) já existem no código mas não são usados. Precisa investigar a interação com a rotina de auto-calibração antes de expor no menu/webui
 - [x] Corrigido bug de mapeamento slot→letra: código passou a usar `slotIndexMap` (as 72 posições A-Z/a-z/0-9/símbolos) em vez da conta `'A' + índice`, que só funcionava certo pros primeiros 26 slots
-- Bug conhecido, de baixo risco no uso atual: `uopt->presetSlot = 'A' + índice` só mapeia corretamente pros primeiros 26 slots (A-Z); a partir do slot 27 a conversão de letra quebra. Não afeta quem usa menos de 26 presets (hoje são 6-7 em uso), mas vale corrigir se o número de presets crescer bastante.
