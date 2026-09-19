@@ -149,25 +149,6 @@ body {
   color: var(--color-primary);
 }
 
-.gbs-button.gbs-readout {
-  align-items: center;
-  cursor: default;
-  display: flex;
-  flex-grow: 0;
-  flex-shrink: 0;
-  justify-content: center;
-  min-width: 56px;
-  pointer-events: none;
-  text-align: center;
-  font-size: 16px;
-  font-weight: 400;
-}
-
-.gbs-button.gbs-readout[clip] {
-  border-color: var(--color-warning);
-  color: var(--color-warning);
-}
-
 .gbs-select {
   appearance: none;
   background-color: var(--color-mine-shaft-light);
@@ -247,9 +228,13 @@ body {
 }
 
 .gbs-slot-icon {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 4px;
   bottom: 6px;
+  box-sizing: border-box;
   fill: var(--color-primary);
   height: 20px;
+  padding: 2px;
   position: absolute;
   right: 6px;
   width: 20px;
@@ -600,8 +585,12 @@ section[name="iconpicker"] {
 }
 
 .gbs-icon-picker__item svg {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 6px;
+  box-sizing: border-box;
   fill: currentColor;
   height: 60%;
+  padding: 3px;
   width: 60%;
 }
 

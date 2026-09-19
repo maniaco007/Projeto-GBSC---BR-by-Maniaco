@@ -18,7 +18,6 @@
 #include "ofw_RGBS.h"
 #include "options.h"
 #include "slot.h"
-#include "custom_presets.h"
 
 #include <Wire.h>
 #include "tv5725.h"
@@ -1005,13 +1004,6 @@ void applyRGBPatches()
     }
 }
 
-// The chip's documented default ADC gain (set by setAdcParametersGainAndOffset()
-// on every boot). Per-channel gain is exposed to the webui as a signed offset
-// from this value, clamped to +/- ADC_GAIN_OFFSET_LIMIT, so "0" always means
-// "factory default" regardless of the raw register's 0-255 range.
-#define ADC_GAIN_BASELINE 0x7B
-#define ADC_GAIN_OFFSET_LIMIT 40
-
 /// Write ADC gain registers, and save in adco->r_gain to properly transfer it
 /// across loading presets or passthrough.
 void setAdcGain(uint8_t gain) {
@@ -1025,26 +1017,6 @@ void setAdcGain(uint8_t gain) {
     adco->r_gain = gain;
     adco->g_gain = gain;
     adco->b_gain = gain;
-}
-
-/// Like setAdcGain(), but for a single channel ('r', 'g' or 'b'). Used by the
-/// per-channel gain sliders, for boards with a color tint that a single
-/// combined gain / auto gain can't correct.
-void setAdcGainChannel(char channel, uint8_t gain) {
-    switch (channel) {
-        case 'r':
-            GBS::ADC_RGCTRL::write(gain);
-            adco->r_gain = gain;
-            break;
-        case 'g':
-            GBS::ADC_GGCTRL::write(gain);
-            adco->g_gain = gain;
-            break;
-        case 'b':
-            GBS::ADC_BGCTRL::write(gain);
-            adco->b_gain = gain;
-            break;
-    }
 }
 
 void setAdcParametersGainAndOffset()
@@ -1499,14 +1471,6 @@ void optimizeSogLevel()
 // If it doesn't find sync, it switches the input and returns 0, so that an active input will be found eventually.
 uint8_t detectAndSwitchToActiveInput()
 { // if any
-    if (uopt->inputSourceLock != 0) {
-        uint8_t lockedInput = (uopt->inputSourceLock == 1) ? 1 : 0; // 1 = RGB/RGBS, 2 = Component
-        if (GBS::ADC_INPUT_SEL::read() != lockedInput) {
-            GBS::ADC_INPUT_SEL::write(lockedInput);
-            delay(200);
-        }
-    }
-
     uint8_t currentInput = GBS::ADC_INPUT_SEL::read();
     unsigned long timeout = millis();
     while (millis() - timeout < 450) {
@@ -1703,10 +1667,8 @@ uint8_t detectAndSwitchToActiveInput()
             setAndUpdateSogLevel(rto->currentLevelSOG);
         }
 
-        if (uopt->inputSourceLock == 0) {
-            GBS::ADC_INPUT_SEL::write(!currentInput); // can only be 1 or 0
-            delay(200);
-        }
+        GBS::ADC_INPUT_SEL::write(!currentInput); // can only be 1 or 0
+        delay(200);
 
         return 0; // don't do the check on the new input here, wait till next run
     }
@@ -3740,6 +3702,15 @@ void doPostPresetLoadSteps()
         }
     } else {
         GBS::DEC_TEST_ENABLE::write(0); // no need for decimation test to be enabled
+        if (adco->r_gain != 0) {
+            // Restore the fixed gain set via the "ganho" +/- buttons, otherwise
+            // setAdcParametersGainAndOffset() above (called for every non-custom
+            // preset apply, i.e. on every input resync) silently resets it back
+            // to the factory baseline right after the user adjusts it.
+            GBS::ADC_RGCTRL::write(adco->r_gain);
+            GBS::ADC_GGCTRL::write(adco->g_gain);
+            GBS::ADC_BGCTRL::write(adco->b_gain);
+        }
     }
 
     // ADC offset if measured
@@ -5528,6 +5499,13 @@ void bypassModeSwitch_RGBHV()
         GBS::DEC_TEST_ENABLE::write(1);
     } else {
         GBS::DEC_TEST_ENABLE::write(0); // no need for decimation test to be enabled
+        if (adco->r_gain != 0) {
+            // Restore the fixed gain here too (see the identical comment in
+            // doPostPresetLoadSteps()).
+            GBS::ADC_RGCTRL::write(adco->r_gain);
+            GBS::ADC_GGCTRL::write(adco->g_gain);
+            GBS::ADC_BGCTRL::write(adco->b_gain);
+        }
     }
 
     rto->presetID = PresetBypassRGBHV; // bypass flavor 2, used to signal buttons in web ui
@@ -5596,15 +5574,6 @@ void runAutoGain()
     }
 }
 
-void setScanlineBrightnessBoost(uint8_t value) {
-    if (GBS::GBS_OPTION_SCANLINES_ENABLED::read() == 1 && rto->appliedScanlineBrightnessBoost != value) {
-        // live-adjust: undo the currently applied boost, apply the new one
-        GBS::VDS_Y_GAIN::write(GBS::VDS_Y_GAIN::read() - rto->appliedScanlineBrightnessBoost + value);
-        rto->appliedScanlineBrightnessBoost = value;
-    }
-    uopt->scanlineBrightnessBoost = value;
-}
-
 void enableScanlines()
 {
     if (GBS::GBS_OPTION_SCANLINES_ENABLED::read() == 0) {
@@ -5642,11 +5611,6 @@ void enableScanlines()
 
         GBS::MAPDT_VT_SEL_PRGV::write(0);
 
-        rto->appliedScanlineBrightnessBoost = uopt->scanlineBrightnessBoost;
-        if (rto->appliedScanlineBrightnessBoost > 0) {
-            GBS::VDS_Y_GAIN::write(GBS::VDS_Y_GAIN::read() + rto->appliedScanlineBrightnessBoost);
-        }
-
         GBS::GBS_OPTION_SCANLINES_ENABLED::write(1);
     }
     rto->scanlinesEnabled = 1;
@@ -5668,11 +5632,6 @@ void disableScanlines()
 
         GBS::DIAG_BOB_PLDY_RAM_BYPS::write(1); // 2_00 7
         GBS::VDS_W_LEV_BYPS::write(1);         // brightness
-
-        if (rto->appliedScanlineBrightnessBoost > 0) {
-            GBS::VDS_Y_GAIN::write(GBS::VDS_Y_GAIN::read() - rto->appliedScanlineBrightnessBoost);
-            rto->appliedScanlineBrightnessBoost = 0;
-        }
 
         GBS::MADPT_Y_MI_OFFSET::write(0xff); // 2_0b offset 0xff disables mixing
         GBS::MADPT_VIIR_BYPS::write(1);      // 2_26 6 disable VIIR
@@ -7938,8 +7897,6 @@ void loop()
     static unsigned long lastTimeSyncWatcher = millis();
     static unsigned long lastTimeSourceCheck = 500; // 500 to start right away (after setup it will be 2790ms when we get here)
     static unsigned long lastTimeInterruptClear = millis();
-    static unsigned long lastActivityMillis = millis();
-    static boolean screenOffActive = false;
 
 #if HAVE_BUTTONS
     static unsigned long lastButton = micros();
@@ -7989,15 +7946,6 @@ void loop()
         }
         myLog("serial", serialCommand);
 
-        if (serialCommand != ' ') {
-            lastActivityMillis = millis();
-            if (screenOffActive) {
-                GBS::DAC_RGBS_PWDNZ::write(1);   // enable DAC
-                GBS::PAD_SYNC_OUT_ENZ::write(0); // enable sync out
-                screenOffActive = false;
-                SerialM.println(F("screen off timer: woken up"));
-            }
-        }
 
         switch (serialCommand) {
             case ' ':
@@ -8931,15 +8879,6 @@ void loop()
     //if (rto->videoIsFrozen && (rto->continousStableCounter >= 2)) {
     //    unfreezeVideo();
     //}
-
-    // sleep timer: blank output after N minutes without any user interaction
-    if (uopt->screenOffTimeoutMinutes > 0 && !screenOffActive &&
-        (millis() - lastActivityMillis) > ((unsigned long)uopt->screenOffTimeoutMinutes * 60000UL)) {
-        GBS::DAC_RGBS_PWDNZ::write(0);   // disable DAC
-        GBS::PAD_SYNC_OUT_ENZ::write(1); // disable sync out
-        screenOffActive = true;
-        SerialM.println(F("screen off timer: output disabled"));
-    }
 
     // flush any debounced preferences save (see requestSaveUserPrefs())
     if (prefsSaveNeeded && (millis() - prefsSaveRequestedAt) > PREFS_SAVE_DEBOUNCE_MS) {
@@ -10157,183 +10096,6 @@ void startWebserver()
         request->send(200, "application/json", result ? "true" : "false");
     });
 
-    // Built-in preset pack (see custom_presets.h, generated by
-    // scripts/update_custom_presets.py from a WebUI backup). Writes the
-    // embedded presets into slots A.. and overwrites their metadata; other
-    // slots are left untouched.
-    server.on("/gbs/custom-presets-count", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(200, "application/json", String((int)gbsc_custom_preset_map_size));
-    });
-
-    server.on("/gbs/custom-presets-apply", HTTP_GET, [](AsyncWebServerRequest *request) {
-        bool result = false;
-        if (request->hasParam("i") && ESP.getFreeHeap() > 8000) {
-            int i = request->getParam("i")->value().toInt();
-            if (i >= 0 && i < (int)gbsc_custom_preset_map_size) {
-                const GbscCustomPresetEntry &entry = gbsc_custom_preset_map[i];
-                String content;
-                content.reserve(2100);
-                char buf[8];
-                for (uint16_t j = 0; j < entry.length; j++) {
-                    snprintf(buf, sizeof(buf), "%d,\r\n", (int)pgm_read_byte(&entry.data[j]));
-                    content += buf;
-                }
-                content += "};\r\n";
-                File f = LittleFS.open(entry.path, "w");
-                if (f) {
-                    f.write((const uint8_t *)content.c_str(), content.length());
-                    f.close();
-                    result = true;
-                }
-            }
-        }
-        request->send(200, "application/json", result ? "true" : "false");
-    });
-
-    server.on("/gbs/custom-presets-slots", HTTP_GET, [](AsyncWebServerRequest *request) {
-        bool result = false;
-        if (ESP.getFreeHeap() > 10000) {
-            SlotMetaArray slotsObject;
-            File slotsRead = LittleFS.open(SLOTS_FILE, "r");
-            if (slotsRead) {
-                slotsRead.read((byte *)&slotsObject, sizeof(slotsObject));
-                slotsRead.close();
-            } else {
-                for (int i = 0; i < SLOTS_TOTAL; i++) {
-                    slotsObject.slot[i].slot = i;
-                    slotsObject.slot[i].presetID = 0;
-                    slotsObject.slot[i].scanlines = 0;
-                    slotsObject.slot[i].scanlinesStrength = 0;
-                    slotsObject.slot[i].wantVdsLineFilter = false;
-                    slotsObject.slot[i].wantStepResponse = true;
-                    slotsObject.slot[i].wantPeaking = true;
-                    strncpy(slotsObject.slot[i].name, EMPTY_SLOT_NAME, 25);
-                }
-            }
-
-            uint8_t icons[SLOTS_TOTAL] = {0};
-            File iconsRead = LittleFS.open(SLOT_ICONS_FILE, "r");
-            if (iconsRead && iconsRead.size() == SLOTS_TOTAL) {
-                iconsRead.read(icons, SLOTS_TOTAL);
-            }
-            if (iconsRead) {
-                iconsRead.close();
-            }
-
-            for (uint8_t i = 0; i < gbsc_custom_slots_size; i++) {
-                const GbscCustomSlotDef &s = gbsc_custom_slots[i];
-                char padded[25] = "                        ";
-                strncpy(padded, s.name, strlen(s.name));
-                memcpy(slotsObject.slot[s.slotIdx].name, padded, 25);
-                slotsObject.slot[s.slotIdx].slot = s.slotIdx;
-                slotsObject.slot[s.slotIdx].presetID = 0;
-                slotsObject.slot[s.slotIdx].scanlines = s.scanlines;
-                slotsObject.slot[s.slotIdx].scanlinesStrength = s.scanlinesStrength;
-                slotsObject.slot[s.slotIdx].wantVdsLineFilter = s.wantVdsLineFilter;
-                slotsObject.slot[s.slotIdx].wantStepResponse = s.wantStepResponse;
-                slotsObject.slot[s.slotIdx].wantPeaking = s.wantPeaking;
-                icons[s.slotIdx] = s.iconId;
-            }
-
-            File slotsWrite = LittleFS.open(SLOTS_FILE, "w");
-            if (slotsWrite) {
-                slotsWrite.write((byte *)&slotsObject, sizeof(slotsObject));
-                slotsWrite.close();
-                result = true;
-                SerialM.println(F("custom preset slots applied"));
-            }
-
-            File iconsWrite = LittleFS.open(SLOT_ICONS_FILE, "w");
-            iconsWrite.write(icons, SLOTS_TOTAL);
-            iconsWrite.close();
-        }
-        request->send(200, "application/json", result ? "true" : "false");
-    });
-
-    // Per-channel ADC gain (independent R/G/B), for boards with a color tint
-    // that the combined gain / auto gain can't correct.
-    server.on("/gbs/adc-gain", HTTP_GET, [](AsyncWebServerRequest *request) {
-        // Report as a signed offset from the chip's documented default gain
-        // (0x7B), so the webui can show "0" at the factory default, negative
-        // values when dimmer, positive when brighter - reading the live
-        // register (not the adco-> cache, which can be stale/unset until the
-        // user or auto gain actually touches it).
-        int rOffset = (int)ADC_GAIN_BASELINE - (int)GBS::ADC_RGCTRL::read();
-        int gOffset = (int)ADC_GAIN_BASELINE - (int)GBS::ADC_GGCTRL::read();
-        int bOffset = (int)ADC_GAIN_BASELINE - (int)GBS::ADC_BGCTRL::read();
-        String json = "{\"r\":" + String(rOffset) +
-                       ",\"g\":" + String(gOffset) +
-                       ",\"b\":" + String(bOffset) +
-                       ",\"limit\":" + String(ADC_GAIN_OFFSET_LIMIT) +
-                       ",\"auto\":" + String(uopt->enableAutoGain ? "true" : "false") + "}";
-        request->send(200, "application/json", json);
-    });
-
-    // Manual input source override: 0 = auto detect, 1 = force RGB/RGBS, 2 = force Component/YPbPr.
-    server.on("/gbs/input-lock", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(200, "application/json", String(uopt->inputSourceLock));
-    });
-
-    server.on("/gbs/input-lock-set", HTTP_GET, [](AsyncWebServerRequest *request) {
-        bool result = false;
-        if (request->hasParam("value")) {
-            int value = request->getParam("value")->value().toInt();
-            if (value >= 0 && value <= 2) {
-                uopt->inputSourceLock = (uint8_t)value;
-                // "Link Entrada->Perfil" (idea from OSSC): manually forcing an
-                // input reloads whatever custom preset was last used on it.
-                if (value == 1 || value == 2) {
-                    Ascii8 linkedSlot = uopt->lastPresetPerInput[value - 1];
-                    if (linkedSlot != 0 && (uopt->presetPreference != OutputCustomized || linkedSlot != uopt->presetSlot)) {
-                        uopt->presetSlot = linkedSlot;
-                        uopt->presetPreference = OutputCustomized;
-                        applyPresets(rto->videoStandardInput);
-                    }
-                }
-                requestSaveUserPrefs();
-                result = true;
-            }
-        }
-        request->send(200, "application/json", result ? "true" : "false");
-    });
-
-    // Extra luma gain applied while scanlines are on, to compensate for the
-    // darker averaged image the scanline mixing effect produces.
-    server.on("/gbs/scanline-boost", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(200, "application/json", String(uopt->scanlineBrightnessBoost));
-    });
-
-    server.on("/gbs/scanline-boost-set", HTTP_GET, [](AsyncWebServerRequest *request) {
-        bool result = false;
-        if (request->hasParam("value")) {
-            int value = request->getParam("value")->value().toInt();
-            if (value >= 0 && value <= 0x40) {
-                setScanlineBrightnessBoost((uint8_t)value);
-                requestSaveUserPrefs();
-                result = true;
-            }
-        }
-        request->send(200, "application/json", result ? "true" : "false");
-    });
-
-    // Sleep timer: blanks video output after N minutes without user interaction. 0 = disabled.
-    server.on("/gbs/screen-off-timeout", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(200, "application/json", String(uopt->screenOffTimeoutMinutes));
-    });
-
-    server.on("/gbs/screen-off-timeout-set", HTTP_GET, [](AsyncWebServerRequest *request) {
-        bool result = false;
-        if (request->hasParam("value")) {
-            int value = request->getParam("value")->value().toInt();
-            if (value >= 0 && value <= 240) {
-                uopt->screenOffTimeoutMinutes = (uint8_t)value;
-                requestSaveUserPrefs();
-                result = true;
-            }
-        }
-        request->send(200, "application/json", result ? "true" : "false");
-    });
-
     // What the OLED status screen shows while a custom preset is active: 0 = name, 1 = icon.
     server.on("/gbs/oled-preset-display", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(200, "application/json", String(uopt->oledPresetDisplayMode));
@@ -10356,7 +10118,7 @@ void startWebserver()
     // behavior), else 1..SLOTS_TOTAL selects a specific slot (1-based) to
     // always force-load on boot.
     server.on("/gbs/startup-preset", HTTP_GET, [](AsyncWebServerRequest *request) {
-        int value = uopt->startupPresetSlot == 0 ? 0 : ((int)uopt->startupPresetSlot - 'A' + 1);
+        int value = uopt->startupPresetSlot == 0 ? 0 : (slotIndexMap.indexOf((char)uopt->startupPresetSlot) + 1);
         request->send(200, "application/json", String(value));
     });
 
@@ -10365,30 +10127,9 @@ void startWebserver()
         if (request->hasParam("value")) {
             int value = request->getParam("value")->value().toInt();
             if (value >= 0 && value <= SLOTS_TOTAL) {
-                uopt->startupPresetSlot = value == 0 ? 0 : (uint8_t)('A' + (value - 1));
+                uopt->startupPresetSlot = value == 0 ? 0 : (Ascii8)slotIndexMap[value - 1];
                 requestSaveUserPrefs();
                 result = true;
-            }
-        }
-        request->send(200, "application/json", result ? "true" : "false");
-    });
-
-    server.on("/gbs/adc-gain-set", HTTP_GET, [](AsyncWebServerRequest *request) {
-        bool result = false;
-        if (request->hasParam("ch") && request->hasParam("value")) {
-            String ch = request->getParam("ch")->value();
-            int offset = request->getParam("value")->value().toInt();
-            if (ch.length() == 1 && offset >= -ADC_GAIN_OFFSET_LIMIT && offset <= ADC_GAIN_OFFSET_LIMIT) {
-                char channel = ch.charAt(0);
-                if (channel == 'r' || channel == 'g' || channel == 'b') {
-                    int target = (int)ADC_GAIN_BASELINE - offset;
-                    if (target < 0) target = 0;
-                    if (target > 255) target = 255;
-                    uopt->enableAutoGain = 0;
-                    setAdcGainChannel(channel, (uint8_t)target);
-                    requestSaveUserPrefs();
-                    result = true;
-                }
             }
         }
         request->send(200, "application/json", result ? "true" : "false");
@@ -10789,8 +10530,8 @@ void requestSaveUserPrefs() {
 // per slot) for the given slot letter. Returns 0 (no link) if unset or the
 // file doesn't exist.
 uint8_t getSlotLinkedInput(Ascii8 slot) {
-    int index = (int)slot - 'A';
-    if (index < 0 || index >= SLOTS_TOTAL) {
+    int index = slotIndexMap.indexOf((char)slot);
+    if (index < 0) {
         return 0;
     }
     File f = LittleFS.open(SLOT_INPUT_FILE, "r");

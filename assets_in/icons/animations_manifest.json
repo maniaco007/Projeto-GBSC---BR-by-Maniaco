@@ -1,12 +1,461 @@
 [
   {
+    "iconId": 1,
+    "name": "nintendo_nes",
+    "source": "assets_in/icons/Nintendo NES.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 2,
+    "name": "nintendo_family_computer_player_1",
+    "source": "assets_in/icons/Nintendo Family Computer Player 1.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 3,
+    "name": "nintendo_snes",
+    "source": "assets_in/icons/Nintendo SNES.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 4,
+    "name": "nintendo_snes_alternate",
+    "source": "assets_in/icons/Nintendo SNES Alternate.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 5,
+    "name": "snes",
+    "source": "assets_in/icons/snes.jpg",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 6,
+    "name": "nintendo_64",
+    "source": "assets_in/icons/Nintendo 64.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 7,
+    "name": "nintendo_64_2",
+    "source": "assets_in/icons/nintendo 64.jpg",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 8,
+    "name": "nintendo_gamecube",
+    "source": "assets_in/icons/Nintendo Gamecube.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
     "iconId": 9,
     "name": "gamecube",
-    "source": "assets_in/icons/gamecube_40.png",
+    "source": "assets_in/icons/gamecube.jpg",
     "size": 32,
-    "threshold": 128,
+    "threshold": "auto",
     "synthBounceFrames": 4,
-    "synthBounceAmplitude": 3,
-    "_comment": "prova de conceito: nao existe arte animada real ainda, entao gera um bounce simples a partir do icone estatico do GameCube ja usado na webui. Troque 'source' por um .gif com varios quadros (ou adicione mais entradas nesta lista para outros consoles) e rode make_icon_animation.py de novo quando tiver a arte definitiva."
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 11,
+    "name": "wii",
+    "source": "assets_in/icons/wii.jpg",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 12,
+    "name": "gameboy_advance",
+    "source": "assets_in/icons/Gameboy Advance.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 13,
+    "name": "gameboy_micro",
+    "source": "assets_in/icons/Gameboy Micro.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 14,
+    "name": "sega_mega_drive",
+    "source": "assets_in/icons/Sega Mega Drive.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 15,
+    "name": "sega_genesis",
+    "source": "assets_in/icons/Sega Genesis.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 16,
+    "name": "megadrive",
+    "source": "assets_in/icons/megadrive.jpg",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 17,
+    "name": "sega",
+    "source": "assets_in/icons/sega.png",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 18,
+    "name": "sega_saturn",
+    "source": "assets_in/icons/Sega Saturn.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 19,
+    "name": "sega_saturn_2",
+    "source": "assets_in/icons/sega saturn.jpg",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 21,
+    "name": "game_9",
+    "source": "assets_in/icons/game (9).png",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 22,
+    "name": "sega_dreamcast",
+    "source": "assets_in/icons/Sega Dreamcast.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 23,
+    "name": "dreamcast",
+    "source": "assets_in/icons/dreamcast.jpg",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 24,
+    "name": "game_8",
+    "source": "assets_in/icons/game (8).png",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 26,
+    "name": "game_5",
+    "source": "assets_in/icons/game (5).png",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 27,
+    "name": "mastersystem",
+    "source": "assets_in/icons/mastersystem.png",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 28,
+    "name": "pcengine",
+    "source": "assets_in/icons/pcengine.jpg",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 29,
+    "name": "game_7",
+    "source": "assets_in/icons/game (7).png",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 30,
+    "name": "snk_neo_geo",
+    "source": "assets_in/icons/SNK Neo Geo.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 31,
+    "name": "neogeocd",
+    "source": "assets_in/icons/neogeocd.jpg",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 32,
+    "name": "sony_playstation",
+    "source": "assets_in/icons/Sony Playstation.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 33,
+    "name": "ps1",
+    "source": "assets_in/icons/ps1.jpg",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 35,
+    "name": "sony_playstation_blue",
+    "source": "assets_in/icons/Sony Playstation Blue.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 36,
+    "name": "sony_playstation_dual_shock",
+    "source": "assets_in/icons/Sony Playstation Dual Shock.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 37,
+    "name": "sony_playstation_2",
+    "source": "assets_in/icons/Sony Playstation 2.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 38,
+    "name": "ps2",
+    "source": "assets_in/icons/ps2.jpg",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 39,
+    "name": "sony_playstation_3",
+    "source": "assets_in/icons/Sony Playstation 3.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 40,
+    "name": "sony_playstation_portable",
+    "source": "assets_in/icons/Sony Playstation Portable.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 41,
+    "name": "microsoft_xbox",
+    "source": "assets_in/icons/Microsoft Xbox.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 42,
+    "name": "xbox",
+    "source": "assets_in/icons/xbox.jpg",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 43,
+    "name": "xbox_360",
+    "source": "assets_in/icons/Xbox 360.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 44,
+    "name": "atari_cx40",
+    "source": "assets_in/icons/Atari CX40.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 45,
+    "name": "atari",
+    "source": "assets_in/icons/atari.jpg",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 46,
+    "name": "game_1",
+    "source": "assets_in/icons/game (1).png",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 47,
+    "name": "game_2",
+    "source": "assets_in/icons/game (2).png",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 48,
+    "name": "philips_odyssey",
+    "source": "assets_in/icons/Philips Odyssey.png",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 49,
+    "name": "cdi",
+    "source": "assets_in/icons/cdi.jpg",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 50,
+    "name": "3do",
+    "source": "assets_in/icons/3do.jpg",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 51,
+    "name": "gravis_joypad",
+    "source": "assets_in/icons/Gravis Joypad.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 52,
+    "name": "mame",
+    "source": "assets_in/icons/MAME.ico",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 53,
+    "name": "game",
+    "source": "assets_in/icons/game.png",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 54,
+    "name": "game_3",
+    "source": "assets_in/icons/game (3).png",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
+  },
+  {
+    "iconId": 55,
+    "name": "game_4",
+    "source": "assets_in/icons/game (4).png",
+    "size": 32,
+    "threshold": "auto",
+    "synthBounceFrames": 4,
+    "synthBounceAmplitude": 3
   }
 ]

@@ -29,6 +29,7 @@ extern void loadDefaultUserOptions();
 extern uint8_t getVideoMode();
 extern runTimeOptions *rto;
 extern userOptions *uopt;
+extern String slotIndexMap;
 #if ENABLE_WIFI
 extern const char *ap_ssid;
 extern const char *ap_password;
@@ -130,7 +131,7 @@ bool presetSelectionMenuHandler(OLEDMenuManager *manager, OLEDMenuItem *item, OL
     display->drawString(OLED_MENU_WIDTH / 2, 16, item->str);
     display->drawXbm((OLED_MENU_WIDTH - TEXT_LOADED_WIDTH) / 2, OLED_MENU_HEIGHT / 2, IMAGE_ITEM(TEXT_LOADED));
     display->display();
-    uopt->presetSlot = 'A' + item->tag; // ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~()!*:,
+    uopt->presetSlot = (Ascii8)slotIndexMap[item->tag];
     uopt->presetPreference = PresetPreference::OutputCustomized;
     applyPresetInputLink(uopt->presetSlot);
     saveUserPrefs();
@@ -242,19 +243,18 @@ bool resetMenuHandler(OLEDMenuManager *manager, OLEDMenuItem *item, OLEDMenuNav,
     return false;
 }
 // Slot files (slots.bin, slot_icons.bin) are indexed 0..SLOTS_TOTAL-1, but
-// uopt->presetSlot stores the slot as its ASCII letter ('A' + index, see
-// presetSelectionMenuHandler/presetsCreationMenuHandler below). Returns -1
-// when no custom preset is active or the letter is out of range.
+// uopt->presetSlot stores the slot as its character in slotIndexMap (see
+// presetSelectionMenuHandler/presetsCreationMenuHandler below). slotIndexMap
+// covers all SLOTS_TOTAL (72) slots -- A-Z, a-z, 0-9 and a handful of
+// symbols -- unlike the plain 'A' + index arithmetic this used to do, which
+// only mapped correctly for the first 26 slots. Returns -1 when no custom
+// preset is active or the letter is out of range.
 static int getActivePresetSlotIndex()
 {
     if (uopt->presetPreference != PresetPreference::OutputCustomized) {
         return -1;
     }
-    int index = (int)uopt->presetSlot - 'A';
-    if (index < 0 || index >= SLOTS_TOTAL) {
-        return -1;
-    }
-    return index;
+    return slotIndexMap.indexOf((char)uopt->presetSlot);
 }
 
 // Looks up the name of the currently active custom preset slot straight from

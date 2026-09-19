@@ -118,13 +118,14 @@ Essa migração também foi a origem de um bug corrigido nesta rodada: um arquiv
 - [x] Logo de boot próprio
 - [x] Migração SPIFFS → LittleFS
 - [x] Ganho ADC por canal, trava de entrada, realce de scanlines, timer de desligar tela, trim de HTotal persistente
-- [x] Seleção de ícone por preset na webui (25 ícones, só GameCube tem arte real derivada de favicon)
-- [x] Menu OLED: aba Perfis funcionando, nome/ícone do preset ativo na tela principal, nomes longos rolando e alinhados à esquerda
-- [x] Infraestrutura de protetor de tela animado por preset (prova de conceito com GameCube)
+- [x] Seleção de ícone por preset na webui (56 ícones com arte real: controles, logos e gabinetes de console)
+- [x] Menu OLED: aba Perfis funcionando, nome/ícone do preset ativo na tela principal, nomes longos rolando e alinhados à esquerda, fonte do protetor de tela (modo Nome) encolhe automaticamente pra não cortar nomes longos
+- [x] Protetor de tela animado por preset (modo Ícone): 51 dos 56 ícones têm animação de bounce gerada automaticamente (threshold adaptativo + contorno de silhueta); 5 ficaram ilegíveis em 1-bit e não têm animação (caem no protetor de tela por nome)
 - [x] Indicador de limite de ganho ADC (número fica vermelho no limite ±40) e Perfil de Inicialização (força um slot específico ao ligar) — ideias do RetroTINK
 - [x] Link Perfil↔Entrada (preset lembra e força a entrada RGB/RGBS ou Componente usada) e aviso de mudança de formato no OLED por 3s — ideias do OSSC
 - [x] Origem de vídeo por preset (SCART/VGA/Componente/RGBS) escolhida ao salvar, mostrada no card do preset entre o nome e o ícone
 - [ ] **`feature-lab` ainda não foi consolidado em `ptbr-import`** — aguardando terminar de testar no aparelho real antes de mesclar
-- [ ] Faltam ícones/animações reais pros outros ~23 consoles (as imagens/gifs vão sendo trazidas aos poucos e cadastradas)
-- [ ] `custom_presets.h` (os 5 presets embarcados) ainda usa o esquema antigo de ids de ícone — precisa ser regerado quando o conjunto de ícones final estiver pronto
+- [x] Removida a feature de "Perfis Padrão do Projeto" (5 presets de fábrica embarcados no firmware, `custom_presets.h`) — em vez de regerar os ids de ícone, decidimos tirar do firmware: removidos o arquivo, os 3 endpoints (`/gbs/custom-presets-*`), o botão/fieldset na webui e o script gerador (`scripts/update_custom_presets.py`)
+- [ ] Ajuste de OFFSET (nível de preto) por canal ADC (R/G/B) — ideia do OSSC ainda não implementada; os registradores (`ADC_ROFCTRL`/`GOFCTRL`/`BOFCTRL`) já existem no código mas não são usados. Precisa investigar a interação com a rotina de auto-calibração antes de expor no menu/webui
+- [x] Corrigido bug de mapeamento slot→letra: código passou a usar `slotIndexMap` (as 72 posições A-Z/a-z/0-9/símbolos) em vez da conta `'A' + índice`, que só funcionava certo pros primeiros 26 slots
 - Bug conhecido, de baixo risco no uso atual: `uopt->presetSlot = 'A' + índice` só mapeia corretamente pros primeiros 26 slots (A-Z); a partir do slot 27 a conversão de letra quebra. Não afeta quem usa menos de 26 presets (hoje são 6-7 em uso), mas vale corrigir se o número de presets crescer bastante.

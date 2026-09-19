@@ -517,120 +517,6 @@ const deletePreset = () => {
     });
 };
 
-// Mirrors the gbs-click="repeat" behavior used elsewhere in the app: fires
-// once immediately, then repeats every 300ms while held, for both mouse and
-// touch. Used by the +/- controls added outside the gbs-message/gbs-click
-// declarative system (adc gain, scanline boost, screen-off timer).
-const bindRepeatClick = (button: HTMLElement, callback: () => void) => {
-  button.addEventListener(
-    !("ontouchstart" in window) ? "mousedown" : "touchstart",
-    () => {
-      callback();
-      clearInterval(button["__interval"]);
-      button["__interval"] = setInterval(callback, 300);
-    }
-  );
-  const stop = () => clearInterval(button["__interval"]);
-  button.addEventListener(!("ontouchstart" in window) ? "mouseup" : "touchend", stop);
-  button.addEventListener("mouseleave", stop);
-};
-
-const ADC_GAIN_OFFSET_LIMIT = 40;
-
-const adcGainState: { r: number; g: number; b: number } = {
-  r: null,
-  g: null,
-  b: null,
-};
-
-const updateAdcGainReadouts = () => {
-  (["r", "g", "b"] as const).forEach((ch) => {
-    const el = document.querySelector(`[gbs-adc-gain-readout="${ch}"]`);
-    if (!el) {
-      return;
-    }
-    const value = adcGainState[ch];
-    el.textContent = value === null ? "—" : String(value);
-    // No histogram/clip-detect register exists on this chip, so this isn't
-    // real video-level clipping like a proper scaler would show - it's a
-    // "you've hit the end of the adjustable range" warning, which is the
-    // closest honest equivalent: if the image still isn't right at +/-40,
-    // there's no more gain headroom left to give it.
-    if (value !== null && Math.abs(value) >= ADC_GAIN_OFFSET_LIMIT) {
-      el.setAttribute("clip", "");
-    } else {
-      el.removeAttribute("clip");
-    }
-  });
-};
-
-const fetchAdcGain = () => {
-  return fetch(`/gbs/adc-gain?${+new Date()}`)
-    .then((r) => r.json())
-    .then((data: { r: number; g: number; b: number }) => {
-      adcGainState.r = data.r;
-      adcGainState.g = data.g;
-      adcGainState.b = data.b;
-      updateAdcGainReadouts();
-    })
-    .catch(() => {});
-};
-
-const adjustAdcGainChannel = (channel: "r" | "g" | "b", delta: number) => {
-  const current = adcGainState[channel];
-  if (current === null) {
-    return;
-  }
-  const next = Math.max(-ADC_GAIN_OFFSET_LIMIT, Math.min(ADC_GAIN_OFFSET_LIMIT, current + delta));
-  if (next === current) {
-    return;
-  }
-  adcGainState[channel] = next;
-  updateAdcGainReadouts();
-  fetch(`/gbs/adc-gain-set?ch=${channel}&value=${next}&${+new Date()}`).catch(() => {});
-};
-
-const initAdcGainButtons = () => {
-  const buttons = nodelistToArray<HTMLElement>(
-    document.querySelectorAll(".gbs-adc-gain-btn")
-  );
-  buttons.forEach((button) => {
-    const channel = button.getAttribute("gbs-adc-gain-channel") as "r" | "g" | "b";
-    const delta = parseInt(button.getAttribute("gbs-adc-gain-delta") || "0", 10);
-    bindRepeatClick(button, () => adjustAdcGainChannel(channel, delta));
-  });
-  fetchAdcGain();
-};
-
-const initInputLockButtons = () => {
-  const buttons = nodelistToArray<HTMLElement>(
-    document.querySelectorAll(".gbs-input-lock-btn")
-  );
-
-  const markActive = (value: string) => {
-    buttons.forEach((b) => {
-      if (b.getAttribute("gbs-input-lock-value") === value) {
-        b.setAttribute("active", "");
-      } else {
-        b.removeAttribute("active");
-      }
-    });
-  };
-
-  buttons.forEach((button) => {
-    const value = button.getAttribute("gbs-input-lock-value");
-    button.addEventListener("click", () => {
-      markActive(value);
-      fetch(`/gbs/input-lock-set?value=${value}&${+new Date()}`).catch(() => {});
-    });
-  });
-
-  fetch(`/gbs/input-lock?${+new Date()}`)
-    .then((r) => r.json())
-    .then((value: number) => markActive(String(value)))
-    .catch(() => {});
-};
-
 const initOledPresetDisplayButtons = () => {
   const buttons = nodelistToArray<HTMLElement>(
     document.querySelectorAll(".gbs-oled-preset-display-btn")
@@ -658,152 +544,6 @@ const initOledPresetDisplayButtons = () => {
     .then((r) => r.json())
     .then((value: number) => markActive(String(value)))
     .catch(() => {});
-};
-
-let scanlineBoostValue: number = null;
-
-const updateScanlineBoostReadout = () => {
-  const el = document.querySelector("[gbs-scanline-boost-readout]");
-  if (el) {
-    el.textContent = scanlineBoostValue === null ? "—" : String(scanlineBoostValue);
-  }
-};
-
-const initScanlineBoostButtons = () => {
-  const buttons = nodelistToArray<HTMLElement>(
-    document.querySelectorAll(".gbs-scanline-boost-btn")
-  );
-  buttons.forEach((button) => {
-    const delta = parseInt(button.getAttribute("gbs-scanline-boost-delta") || "0", 10);
-    bindRepeatClick(button, () => {
-      if (scanlineBoostValue === null) {
-        return;
-      }
-      const next = Math.max(0, Math.min(0x40, scanlineBoostValue + delta));
-      if (next === scanlineBoostValue) {
-        return;
-      }
-      scanlineBoostValue = next;
-      updateScanlineBoostReadout();
-      fetch(`/gbs/scanline-boost-set?value=${scanlineBoostValue}&${+new Date()}`).catch(() => {});
-    });
-  });
-
-  fetch(`/gbs/scanline-boost?${+new Date()}`)
-    .then((r) => r.json())
-    .then((value: number) => {
-      scanlineBoostValue = value;
-      updateScanlineBoostReadout();
-    })
-    .catch(() => {});
-};
-
-let screenOffValue: number = null;
-
-const updateScreenOffReadout = () => {
-  const el = document.querySelector("[gbs-screen-off-readout]");
-  if (el) {
-    el.textContent = screenOffValue === null ? "—" : screenOffValue === 0 ? "desativado" : `${screenOffValue} min`;
-  }
-};
-
-const initScreenOffButtons = () => {
-  const buttons = nodelistToArray<HTMLElement>(
-    document.querySelectorAll(".gbs-screen-off-btn")
-  );
-  buttons.forEach((button) => {
-    const delta = parseInt(button.getAttribute("gbs-screen-off-delta") || "0", 10);
-    bindRepeatClick(button, () => {
-      if (screenOffValue === null) {
-        return;
-      }
-      const next = Math.max(0, Math.min(240, screenOffValue + delta));
-      if (next === screenOffValue) {
-        return;
-      }
-      screenOffValue = next;
-      updateScreenOffReadout();
-      fetch(`/gbs/screen-off-timeout-set?value=${screenOffValue}&${+new Date()}`).catch(() => {});
-    });
-  });
-
-  fetch(`/gbs/screen-off-timeout?${+new Date()}`)
-    .then((r) => r.json())
-    .then((value: number) => {
-      screenOffValue = value;
-      updateScreenOffReadout();
-    })
-    .catch(() => {});
-};
-
-const doImportCustomPresets = () => {
-  const button = document.querySelector(
-    ".gbs-custom-presets-button"
-  ) as HTMLButtonElement;
-  const label = button ? (button.querySelector("div:last-child") as HTMLElement) : null;
-  const originalLabel = label ? label.textContent : "";
-  const setLabel = (s: string) => {
-    if (label) label.textContent = s;
-  };
-  const release = () => {
-    if (button) button.removeAttribute("disabled");
-    setLabel(originalLabel);
-  };
-
-  const ok = confirm(
-    "Importar os perfis padrão deste projeto?\n\nIsso sobrescreve os slots correspondentes (A, B, C...). Os demais slots não são afetados."
-  );
-  if (!ok) {
-    return;
-  }
-
-  if (button) button.setAttribute("disabled", "");
-
-  const checkStatus = (r: Response) => {
-    if (!r.ok) {
-      throw new Error(`HTTP ${r.status}`);
-    }
-    return r.json();
-  };
-
-  fetch(`/gbs/custom-presets-count?${+new Date()}`)
-    .then(checkStatus)
-    .then((count: number) => {
-      const writeOne = (i: number): Promise<void> => {
-        if (i >= count) {
-          return fetch(`/gbs/custom-presets-slots?${+new Date()}`)
-            .then(checkStatus)
-            .then((success: boolean) => {
-              if (!success) {
-                throw new Error("slots write failed");
-              }
-            });
-        }
-        setLabel(`${i + 1}/${count}`);
-        return fetch(`/gbs/custom-presets-apply?i=${i}&${+new Date()}`)
-          .then(checkStatus)
-          .then((success: boolean) => {
-            if (!success) {
-              throw new Error("preset " + i + " write failed");
-            }
-            return writeOne(i + 1);
-          });
-      };
-      return writeOne(0);
-    })
-    .then(() => {
-      setLabel("OK");
-      setTimeout(() => {
-        fetchSlotNames().then((success: boolean) => {
-          if (success) updateSlotNames();
-          release();
-        });
-      }, 300);
-    })
-    .catch(() => {
-      gbsAlert("Falha ao importar os perfis padrão").catch(() => {});
-      release();
-    });
 };
 
 const getSlotsHTML = () => {
@@ -1662,12 +1402,6 @@ const initGeneralListeners = () => {
   });
 
   GBSControl.ui.backupButton.addEventListener("click", doBackup);
-  const customPresetsButton = document.querySelector(
-    ".gbs-custom-presets-button"
-  );
-  if (customPresetsButton) {
-    customPresetsButton.addEventListener("click", doImportCustomPresets);
-  }
   GBSControl.ui.wifiListTable.addEventListener("click", wifiSelectSSID);
   GBSControl.ui.wifiConnectButton.addEventListener("click", wifiConnect);
   GBSControl.ui.wifiApButton.addEventListener("click", wifiSetAPMode);
@@ -1812,7 +1546,7 @@ const gbsPrompt = (text: string, defaultValue = "", defaultConnector = 1) => {
   });
 };
 
-const SLOT_ICON_COUNT = 25;
+const SLOT_ICON_COUNT = 56;
 
 // 0 = not set (older preset, saved before this existed)
 const CONNECTOR_LABELS: { [key: number]: string } = {
@@ -1824,30 +1558,61 @@ const CONNECTOR_LABELS: { [key: number]: string } = {
 
 const SLOT_ICON_LABELS = [
   "Genérico",
-  "Zeebo",
-  "Philips Odyssey",
-  "Telejogo",
-  "Atari Video Pinball",
-  "PS2",
-  "Xbox Classic",
-  "Nintendo Wii",
-  "Sega Master System",
-  "GameCube",
-  "Dreamcast",
-  "Mega Drive",
-  "Sega CD",
-  "Sega Saturn",
-  "Nintendo 64",
-  "PS1",
-  "Neo Geo CD",
+  "Nintendo NES",
+  "Famicom",
   "Super Nintendo",
-  "Atari Jaguar",
-  "Amiga CD32",
-  "Sharp Twin Famicom",
-  "NEC Turbo Duo",
-  "Panasonic 3DO",
-  "Atari 2600",
+  "Super Nintendo (Alt)",
+  "Super Nintendo (logo)",
+  "Nintendo 64",
+  "Nintendo 64 (logo)",
+  "GameCube",
+  "GameCube (logo)",
+  "Nintendo Wii",
+  "Nintendo Wii (logo)",
+  "Game Boy Advance",
+  "Game Boy Micro",
+  "Sega Mega Drive",
+  "Sega Genesis",
+  "Mega Drive (logo)",
+  "Mega Drive / Genesis (linha)",
+  "Sega Saturn",
+  "Sega Saturn (logo)",
+  "Sega Saturn (linha)",
+  "Sega Saturn (linha 2)",
+  "Dreamcast",
+  "Dreamcast (logo)",
+  "Dreamcast (linha)",
+  "Sega CD (logo)",
+  "Sega CD (linha)",
+  "Sega Master System",
+  "NEC / PC Engine (logo)",
+  "PC Engine / TurboGrafx (linha)",
+  "Neo Geo",
+  "Neo Geo CD (logo)",
+  "PS1",
+  "PS1 (logo)",
+  "PS1 Slim (logo)",
+  "PS1 (Azul)",
+  "PS1 (Dual Shock)",
+  "PS2",
+  "PS2 (logo)",
+  "PS3",
+  "PSP",
+  "Xbox Classic",
+  "Xbox (logo)",
+  "Xbox 360",
+  "Atari 2600 (Joystick)",
+  "Atari (logo)",
+  "Atari (Fuji)",
+  "Atari 2600 (console)",
+  "Philips Odyssey",
   "Philips CD-i",
+  "Panasonic 3DO",
+  "Gravis GamePad",
+  "MAME / Arcade",
+  "Console Retrô 1",
+  "Console Retrô 2",
+  "Console Retrô 3",
 ];
 
 const gbsIconPromptPromise = {
@@ -1927,12 +1692,8 @@ const initUI = () => {
   initHelp();
   initIconPicker();
   initConnectorPicker();
-  initAdcGainButtons();
-  initInputLockButtons();
   initOledPresetDisplayButtons();
   initStartupPresetSelect();
-  initScanlineBoostButtons();
-  initScreenOffButtons();
 };
 
 const main = () => {
