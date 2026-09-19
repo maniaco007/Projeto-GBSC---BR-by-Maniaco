@@ -430,11 +430,228 @@ const deletePreset = () => {
         gbsAlert(t("Erro ao apagar o preset")).catch(() => { });
     });
 };
+// ---- Profile cards: pagination (6 per page), swipe and search ----
+const SLOT_ROW_HEIGHT = 88; // card min-height (80) + margins
+let slotsPerPage = 6;
+const SLOT_SEARCH_MIN_SAVED = 12;
+const slotPager = { page: 0, query: "", userNavigated: false };
+const normalizeSearch = (s) => s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+// Fit as many rows (2 cards each) as the visible area allows instead of a
+// fixed 6 per page; keeps the previous value while the tab is hidden.
+const computeSlotsPerPage = () => {
+    const container = GBSControl.ui.slotContainer;
+    const scroll = document.querySelector(".gbs-scroll");
+    if (!container || !scroll || scroll.clientHeight === 0 || container.offsetParent === null) {
+        return;
+    }
+    const top = container.getBoundingClientRect().top -
+        scroll.getBoundingClientRect().top +
+        scroll.scrollTop;
+    const below = 160; // pager + counter + action buttons + padding
+    const rows = Math.floor((scroll.clientHeight - top - below) / SLOT_ROW_HEIGHT);
+    slotsPerPage = Math.max(3, Math.min(12, rows)) * 2;
+};
+const applySlotPagination = () => {
+    const container = GBSControl.ui.slotContainer;
+    if (!container) {
+        return;
+    }
+    computeSlotsPerPage();
+    const buttons = nodelistToArray(container.querySelectorAll('[gbs-role="slot"]'));
+    const query = normalizeSearch(slotPager.query);
+    const shown = [];
+    let emptyPlaced = false;
+    let savedCount = 0;
+    buttons.forEach((button) => {
+        const name = (button.getAttribute("gbs-name") || "").trim();
+        const isEmpty = name === "Empty";
+        if (!isEmpty) {
+            savedCount++;
+        }
+        let visible;
+        if (isEmpty) {
+            visible = !query && !emptyPlaced;
+            if (visible) {
+                emptyPlaced = true;
+            }
+        }
+        else {
+            visible = !query || normalizeSearch(name).indexOf(query) >= 0;
+        }
+        button.classList.toggle("gbs-slot--filtered", !visible);
+        if (visible) {
+            shown.push(button);
+        }
+    });
+    const pages = Math.max(1, Math.ceil(shown.length / slotsPerPage));
+    slotPager.page = Math.max(0, Math.min(slotPager.page, pages - 1));
+    shown.forEach((button, i) => {
+        button.classList.toggle("gbs-slot--offpage", Math.floor(i / slotsPerPage) !== slotPager.page);
+    });
+    const searchWrap = document.querySelector("[gbs-slot-search-wrap]");
+    if (searchWrap) {
+        if (savedCount > SLOT_SEARCH_MIN_SAVED || slotPager.query) {
+            searchWrap.removeAttribute("hidden");
+        }
+        else {
+            searchWrap.setAttribute("hidden", "");
+        }
+    }
+    if (pages > 1) {
+        container.setAttribute("gbs-paged", "");
+        container.style.minHeight = `${(slotsPerPage / 2) * SLOT_ROW_HEIGHT}px`;
+    }
+    else {
+        container.style.minHeight = "";
+        container.removeAttribute("gbs-paged");
+    }
+    const pager = document.querySelector("[gbs-pager]");
+    const dots = document.querySelector("[gbs-pager-dots]");
+    if (pager && dots) {
+        if (pages > 1) {
+            pager.removeAttribute("hidden");
+            dots.innerHTML = "";
+            for (let p = 0; p < pages; p++) {
+                const dot = document.createElement("span");
+                dot.className = "gbs-pager__dot";
+                if (p === slotPager.page) {
+                    dot.setAttribute("active", "");
+                }
+                dot.addEventListener("click", () => {
+                    slotPager.userNavigated = true;
+                    slotPager.page = p;
+                    applySlotPagination();
+                });
+                dots.appendChild(dot);
+            }
+        }
+        else {
+            pager.setAttribute("hidden", "");
+        }
+    }
+};
+const changeSlotPage = (delta) => {
+    slotPager.userNavigated = true;
+    slotPager.page += delta;
+    applySlotPagination();
+};
+// Only used to open on the active preset's page at load; once the user pages,
+// searches or taps a card, never jump (the device re-syncs the active preset
+// and would pull them back to its page, e.g. when picking an empty slot).
+const showActiveSlotPage = () => {
+    if (slotPager.userNavigated) {
+        return;
+    }
+    const container = GBSControl.ui.slotContainer;
+    const active = container && container.querySelector('[gbs-role="slot"][active]');
+    if (!active) {
+        return;
+    }
+    const visible = nodelistToArray(container.querySelectorAll('[gbs-role="slot"]:not(.gbs-slot--filtered)'));
+    const index = visible.indexOf(active);
+    if (index >= 0) {
+        const page = Math.floor(index / slotsPerPage);
+        if (page !== slotPager.page) {
+            slotPager.page = page;
+            applySlotPagination();
+        }
+    }
+};
+const initSlotPager = () => {
+    const container = GBSControl.ui.slotContainer;
+    const prev = document.querySelector("[gbs-pager-prev]");
+    const next = document.querySelector("[gbs-pager-next]");
+    if (prev) {
+        prev.addEventListener("click", () => changeSlotPage(-1));
+    }
+    if (next) {
+        next.addEventListener("click", () => changeSlotPage(1));
+    }
+    const search = document.querySelector("[gbs-slot-search]");
+    if (search) {
+        search.addEventListener("input", () => {
+            slotPager.userNavigated = true;
+            slotPager.query = search.value;
+            slotPager.page = 0;
+            applySlotPagination();
+        });
+    }
+    if (container) {
+        let startX = 0;
+        let startY = 0;
+        container.addEventListener("touchstart", (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+        container.addEventListener("touchend", (e) => {
+            const dx = e.changedTouches[0].clientX - startX;
+            const dy = e.changedTouches[0].clientY - startY;
+            if (Math.abs(dx) > 50 && Math.abs(dy) < 40) {
+                changeSlotPage(dx < 0 ? 1 : -1);
+            }
+        });
+        const markNavigated = () => {
+            slotPager.userNavigated = true;
+        };
+        container.addEventListener("click", markNavigated, true);
+        container.addEventListener("touchend", markNavigated, true);
+        window.addEventListener("resize", () => applySlotPagination());
+        // Jump to the page of the active preset whenever the active one changes.
+        new MutationObserver(showActiveSlotPage).observe(container, {
+            attributes: true,
+            subtree: true,
+            attributeFilter: ["active"],
+        });
+    }
+    applySlotPagination();
+};
+// ---- Color themes (accent colors only; CSS does the rest via data-theme) ----
+const GBS_THEMES = ["padrao", "fosforo", "synthwave", "ambar", "rubi", "roxo"];
+const applyTheme = (theme) => {
+    if (GBS_THEMES.indexOf(theme) < 0) {
+        theme = "padrao";
+    }
+    document.documentElement.setAttribute("data-theme", theme);
+    try {
+        localStorage.setItem("gbs-theme", theme);
+    }
+    catch (e) { }
+    nodelistToArray(document.querySelectorAll(".gbs-theme-btn")).forEach((b) => {
+        if (b.getAttribute("gbs-theme-value") === theme) {
+            b.setAttribute("active", "");
+        }
+        else {
+            b.removeAttribute("active");
+        }
+    });
+};
+const initThemeSelector = () => {
+    let stored = null;
+    try {
+        stored = localStorage.getItem("gbs-theme");
+    }
+    catch (e) { }
+    nodelistToArray(document.querySelectorAll(".gbs-theme-btn")).forEach((button) => {
+        button.addEventListener("click", () => applyTheme(button.getAttribute("gbs-theme-value")));
+    });
+    applyTheme(stored || "padrao");
+};
 // ---- Language selector (PT-BR default, English optional) ----
 // Portuguese text lives directly in the HTML template / code. English is
 // applied on top of it via this exact-text dictionary; anything not listed
 // (slot names, technical labels) stays untouched.
 const I18N_EN = {
+    "Perfis salvos:": "Saved profiles:",
+    "Buscar perfil": "Search profile",
+    "Padrão": "Default",
+    "Verde Fósforo": "Phosphor Green",
+    "Âmbar CRT": "CRT Amber",
+    "Rubi Famicom": "Famicom Ruby",
+    "Roxo GameCube": "GameCube Purple",
     "Resolução": "Resolution",
     "Escolha uma resolução de saída entre estas predefinições.": "Choose an output resolution from these presets.",
     "Sua seleção também será usada na inicialização. 1280x960 é recomendado para fontes NTSC, 1280x1024 para PAL.": "Your selection will also be used for startup. 1280x960 is recommended for NTSC sources, 1280x1024 for PAL.",
@@ -660,7 +877,7 @@ const getSlotsHTML = () => {
     gbs-element-ref="slot-${chr}"
     gbs-role="slot"
     gbs-name="slot-${idx}"
-  ><svg class="gbs-slot-icon"><use gbs-icon-use href="#gbs-slot-icon-0"></use></svg></button>`;
+  ><svg class="gbs-slot-art"><use gbs-icon-use href="#gbs-slot-icon-0"></use></svg></button>`;
     }).join('');
 };
 const setSlot = (slot) => {
@@ -694,17 +911,27 @@ const sortSlotButtonsAlphabetically = () => {
     buttons.forEach((button) => container.appendChild(button));
 };
 const updateSlotNames = () => {
+    let savedCount = 0;
     for (let i = 0; i < GBSControl.maxSlots; i++) {
         const el = document.querySelector(`[gbs-slot-id="${i}"]`);
         el.setAttribute("gbs-name", GBSControl.structs.slots[i].name);
         const iconId = GBSControl.slotIcons[i] || 0;
-        const use = el.querySelector("[gbs-icon-use]");
-        if (use) {
+        nodelistToArray(el.querySelectorAll("[gbs-icon-use]")).forEach((use) => {
             use.setAttribute("href", `#gbs-slot-icon-${iconId}`);
+        });
+        const slotName = (GBSControl.structs.slots[i].name || "").trim();
+        if (slotName && slotName !== "Empty") {
+            savedCount++;
         }
         el.setAttribute("gbs-conn", t(CONNECTOR_LABELS[GBSControl.slotConnectors[i]] || ""));
     }
+    const counter = document.querySelector("[gbs-slot-count]");
+    if (counter) {
+        counter.textContent = `${savedCount}/${GBSControl.maxSlots}`;
+    }
     sortSlotButtonsAlphabetically();
+    applySlotPagination();
+    showActiveSlotPage();
     populateStartupPresetOptions();
 };
 let startupPresetValue = null;
@@ -1570,6 +1797,8 @@ const initUI = () => {
     initConnectorPicker();
     initOledPresetDisplayButtons();
     initStartupPresetSelect();
+    initSlotPager();
+    initThemeSelector();
     initLanguageSelector();
 };
 const main = () => {

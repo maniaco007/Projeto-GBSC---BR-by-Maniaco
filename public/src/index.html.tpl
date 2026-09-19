@@ -190,7 +190,7 @@
     </svg>
     <div class="gbs-container">
       <div class="gbs-menu">
-        <svg
+        <div class="gbs-menu__logo-wrap"><svg
           version="1.0"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0,0,284,99"
@@ -240,7 +240,7 @@
               GBS
             </text>
           </g>
-        </svg>
+        </svg><div class="gbs-menu__brand">by Maniaco Game Room</div></div>
         <button
           gbs-section="presets"
           class="gbs-button gbs-button__menu gbs-icon"
@@ -383,7 +383,16 @@
               <li>Para salvar suas customizações, primeiro selecione um slot para o novo perfil, depois salve ou carregue nele.</li>
               <li>Selecionar um slot também o torna o perfil de boot.</li>
             </ul>
+            <div class="gbs-slot-search-wrap" gbs-slot-search-wrap hidden>
+              <input class="gbs-button gbs-slot-search" gbs-slot-search type="search" placeholder="Buscar perfil" autocomplete="off" />
+            </div>
             <div class="gbs-presets" gbs-slot-html></div>
+            <div class="gbs-pager" gbs-pager hidden>
+              <button class="gbs-button gbs-pager__btn" gbs-pager-prev><div class="gbs-icon">keyboard_arrow_left</div></button>
+              <div class="gbs-pager__dots" gbs-pager-dots></div>
+              <button class="gbs-button gbs-pager__btn" gbs-pager-next><div class="gbs-icon">keyboard_arrow_right</div></button>
+            </div>
+            <div class="gbs-slot-counter"><span>Perfis salvos:</span> <span gbs-slot-count>0</span></div>
             <div class="gbs-flex">
               <button
                 class="gbs-button gbs-button__control-action"
@@ -916,6 +925,19 @@
                     <button class="gbs-button gbs-button__control gbs-lang-btn" gbs-lang-value="en" gbs-lang-keep>
                       <div>English</div>
                     </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2">
+                  <span gbs-lang-keep>Tema / Theme</span>
+                  <div class="gbs-theme-picker">
+                    <button class="gbs-button gbs-theme-btn" gbs-theme-value="padrao"><span class="gbs-theme-dots"><i></i><i></i></span><div>Padrão</div></button>
+                    <button class="gbs-button gbs-theme-btn" gbs-theme-value="fosforo"><span class="gbs-theme-dots"><i></i><i></i></span><div>Verde Fósforo</div></button>
+                    <button class="gbs-button gbs-theme-btn" gbs-theme-value="synthwave"><span class="gbs-theme-dots"><i></i><i></i></span><div>Synthwave</div></button>
+                    <button class="gbs-button gbs-theme-btn" gbs-theme-value="ambar"><span class="gbs-theme-dots"><i></i><i></i></span><div>Âmbar CRT</div></button>
+                    <button class="gbs-button gbs-theme-btn" gbs-theme-value="rubi"><span class="gbs-theme-dots"><i></i><i></i></span><div>Rubi Famicom</div></button>
+                    <button class="gbs-button gbs-theme-btn" gbs-theme-value="roxo"><span class="gbs-theme-dots"><i></i><i></i></span><div>Roxo GameCube</div></button>
                   </div>
                 </td>
               </tr>

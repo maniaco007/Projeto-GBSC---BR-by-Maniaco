@@ -561,6 +561,7 @@ input {
 section[name="prompt"],
 section[name="alert"],
 section[name="iconpicker"] {
+  z-index: 50;
   background-color: rgba(0, 0, 0, 0.96);
   bottom: 0;
   left: 0;
@@ -795,6 +796,377 @@ section[name="iconpicker"] {
   }
 }
 
+/** UX refresh: header, panels, tactile buttons, console-art profile cards, pager, themes */
+
+/* ---- color themes (accents only) ---- */
+:root[data-theme="fosforo"] {
+  --color-primary: #39ff88;
+  --color-primary-rgba: 57, 255, 136;
+  --color-secondary: #d8ff3d;
+  --color-secondary-rgba: 216, 255, 61;
+}
+:root[data-theme="synthwave"] {
+  --color-primary: #ff3cac;
+  --color-primary-rgba: 255, 60, 172;
+  --color-secondary: #7df9ff;
+  --color-secondary-rgba: 125, 249, 255;
+}
+:root[data-theme="ambar"] {
+  --color-primary: #ffb000;
+  --color-primary-rgba: 255, 176, 0;
+  --color-secondary: #ff7a1a;
+  --color-secondary-rgba: 255, 122, 26;
+}
+:root[data-theme="rubi"] {
+  --color-primary: #ff5252;
+  --color-primary-rgba: 255, 82, 82;
+  --color-secondary: #ffd166;
+  --color-secondary-rgba: 255, 209, 102;
+}
+:root[data-theme="roxo"] {
+  --color-primary: #a78bfa;
+  --color-primary-rgba: 167, 139, 250;
+  --color-secondary: #ffb86b;
+  --color-secondary-rgba: 255, 184, 107;
+}
+
+/* ---- background texture ---- */
+.gbs-container {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.018) 0 2px,
+    transparent 2px 5px
+  );
+}
+
+/* ---- header: logo + tabs on top, all screen sizes ---- */
+.gbs-menu {
+  align-items: center;
+  background: linear-gradient(180deg, #2c2c2c 0%, #1a1a1a 100%);
+  border-bottom: 1px solid rgba(var(--color-primary-rgba), 0.35);
+  border-top: 0;
+  bottom: initial;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  height: 64px;
+  position: relative;
+  top: 0;
+}
+
+.gbs-menu__logo-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-right: 8px;
+  width: 200%;
+}
+
+.gbs-menu__logo {
+  display: block;
+  margin: 0;
+  width: 100%;
+}
+
+.gbs-menu__brand {
+  color: var(--color-silver-chalice);
+  font-size: 8px;
+  letter-spacing: 0.3px;
+  line-height: 10px;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.gbs-scroll {
+  height: calc(100% - 64px);
+  margin-bottom: 0;
+}
+
+.gbs-button__menu {
+  border-radius: 8px;
+  height: 46px;
+  margin: 0 2px;
+}
+
+/* ---- panels ---- */
+.gbs-fieldset {
+  background: linear-gradient(180deg, #262626 0%, #1b1b1b 100%);
+  border: 1px solid rgba(var(--color-primary-rgba), 0.2);
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.gbs-fieldset__legend {
+  background: linear-gradient(180deg, #414141 0%, #2a2a2a 100%);
+  border: 1px solid #4d4d4d;
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  box-sizing: border-box;
+  display: block !important;
+  float: left;
+  margin: 0 0 8px;
+  padding: 3px 10px;
+  width: 100%;
+}
+
+.gbs-fieldset__legend ~ * {
+  clear: both;
+}
+
+.gbs-fieldset::after {
+  clear: both;
+  content: "";
+  display: table;
+}
+
+/* ---- tactile buttons ---- */
+.gbs-button__control,
+.gbs-button__preset,
+.gbs-button__resolution--center,
+.gbs-lang-btn,
+.gbs-theme-btn,
+.gbs-pager__btn {
+  background: linear-gradient(180deg, #383838 0%, #262626 100%);
+  border: 1px solid rgba(var(--color-primary-rgba), 0.4);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 2px 3px rgba(0, 0, 0, 0.45);
+}
+
+.gbs-button__control.gbs-button__secondary,
+.gbs-button__preset.gbs-button__secondary,
+.gbs-button__resolution--center.gbs-button__secondary {
+  border: 1px solid rgba(var(--color-secondary-rgba), 0.55);
+}
+
+.gbs-button__control[active],
+.gbs-button__preset[active],
+.gbs-lang-btn[active],
+.gbs-theme-btn[active] {
+  border: 1px solid var(--color-primary);
+}
+
+.gbs-button__control-action {
+  background: linear-gradient(
+    180deg,
+    rgba(var(--color-primary-rgba), 0.55) 0%,
+    rgba(var(--color-primary-rgba), 0.22) 100%
+  );
+  border: 1px solid rgba(var(--color-primary-rgba), 0.85);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.55);
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
+}
+
+.gbs-button__control-action.gbs-button__secondary {
+  background: linear-gradient(
+    180deg,
+    rgba(var(--color-secondary-rgba), 0.95) 0%,
+    rgba(var(--color-secondary-rgba), 0.6) 100%
+  );
+  border: 1px solid rgba(var(--color-secondary-rgba), 1);
+  color: #1c1400;
+  text-shadow: none;
+}
+
+/* ---- resolution: metallic push buttons ---- */
+.gbs-button__resolution:not(.gbs-button__resolution--center) {
+  background: linear-gradient(180deg, #5d5d5d 0%, #383838 55%, #2b2b2b 100%);
+  border: 1px solid #7c7c7c;
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 2px 3px rgba(0, 0, 0, 0.55);
+  color: #ececec;
+}
+
+.gbs-button__resolution:not(.gbs-button__resolution--center)::before {
+  background: #1d1d1d;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px #000;
+  content: "";
+  height: 7px;
+  left: 6px;
+  position: absolute;
+  top: 6px;
+  width: 7px;
+}
+
+.gbs-button__resolution:not(.gbs-button__resolution--center)[active] {
+  border: 1px solid var(--color-primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 8px 2px rgba(var(--color-primary-rgba), 0.45);
+  color: #fff;
+}
+
+.gbs-button__resolution:not(.gbs-button__resolution--center)[active]::before {
+  background: var(--color-primary);
+  box-shadow: 0 0 6px 2px rgba(var(--color-primary-rgba), 0.8);
+}
+
+/* ---- profile cards ---- */
+.gbs-button__slot {
+  align-items: flex-end;
+  flex-grow: 0;
+  width: calc(50% - 8px);
+  background: linear-gradient(180deg, #2b2b2b 0%, #1b1b1b 100%);
+  border: 1px solid #3b3b3b;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+  justify-content: center;
+  min-height: 80px;
+  overflow: hidden;
+}
+
+.gbs-button__slot::before,
+.gbs-button__slot::after {
+  max-width: 58%;
+  position: relative;
+  text-align: right;
+  z-index: 1;
+}
+
+.gbs-button__slot[active] {
+  border: 1px solid var(--color-primary);
+  box-shadow: inset 0 0 8px 3px rgba(var(--color-primary-rgba), 0.25),
+    0 0 8px 3px rgba(var(--color-primary-rgba), 0.35);
+}
+
+.gbs-slot-art {
+  filter: saturate(0.85) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+  height: 64px;
+  left: 4px;
+  opacity: 0.45;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 64px;
+  z-index: 0;
+}
+
+.gbs-button__slot[gbs-name="Empty"] .gbs-slot-art {
+  opacity: 0.12;
+}
+
+.gbs-slot--filtered,
+.gbs-slot--offpage {
+  display: none !important;
+}
+
+
+/* ---- pager + search + counter ---- */
+.gbs-pager {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.gbs-pager[hidden],
+.gbs-slot-search-wrap[hidden] {
+  display: none;
+}
+
+.gbs-pager__btn {
+  flex-grow: 0;
+  height: 34px;
+  padding: 0;
+  text-align: center;
+  width: 46px;
+}
+
+.gbs-pager__dots {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin: 0 14px;
+}
+
+.gbs-pager__dot {
+  background: #4a4a4a;
+  border-radius: 50%;
+  cursor: pointer;
+  height: 9px;
+  width: 9px;
+}
+
+.gbs-pager__dot[active] {
+  background: var(--color-primary);
+  box-shadow: 0 0 6px 2px rgba(var(--color-primary-rgba), 0.6);
+}
+
+.gbs-slot-search {
+  -webkit-user-select: text;
+  height: 38px;
+  margin: 0 0 4px;
+  text-align: left;
+  user-select: text;
+  width: 100%;
+}
+
+.gbs-slot-counter {
+  color: var(--color-silver-chalice);
+  font-size: 12px;
+  margin: 4px 8px 0;
+  text-align: right;
+}
+
+/* ---- language / theme pickers ---- */
+.gbs-theme-picker {
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 4px;
+}
+
+.gbs-theme-btn {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 56px;
+  justify-content: center;
+  margin: 0;
+  min-width: 0;
+  padding: 4px;
+  text-align: center;
+  white-space: normal;
+}
+
+.gbs-theme-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.gbs-theme-dots i {
+  border-radius: 50%;
+  display: block;
+  height: 12px;
+  width: 12px;
+}
+
+.gbs-theme-btn[gbs-theme-value="padrao"] i:nth-child(1) { background: #00c0fb; }
+.gbs-theme-btn[gbs-theme-value="padrao"] i:nth-child(2) { background: #eab638; }
+.gbs-theme-btn[gbs-theme-value="fosforo"] i:nth-child(1) { background: #39ff88; }
+.gbs-theme-btn[gbs-theme-value="fosforo"] i:nth-child(2) { background: #d8ff3d; }
+.gbs-theme-btn[gbs-theme-value="synthwave"] i:nth-child(1) { background: #ff3cac; }
+.gbs-theme-btn[gbs-theme-value="synthwave"] i:nth-child(2) { background: #7df9ff; }
+.gbs-theme-btn[gbs-theme-value="ambar"] i:nth-child(1) { background: #ffb000; }
+.gbs-theme-btn[gbs-theme-value="ambar"] i:nth-child(2) { background: #ff7a1a; }
+.gbs-theme-btn[gbs-theme-value="rubi"] i:nth-child(1) { background: #ff5252; }
+.gbs-theme-btn[gbs-theme-value="rubi"] i:nth-child(2) { background: #ffd166; }
+.gbs-theme-btn[gbs-theme-value="roxo"] i:nth-child(1) { background: #a78bfa; }
+.gbs-theme-btn[gbs-theme-value="roxo"] i:nth-child(2) { background: #ffb86b; }
+
+.gbs-scroll > section[name="presets"] > fieldset.presets > .gbs-presets {
+  align-content: flex-start;
+  flex-grow: 0;
+  justify-content: flex-start;
+}
+
     </style>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAVFBMVEUAAAD////5+fnh4eEKCgzp6enw8PDCw8MrLCxERUZTVFTX19fMzM2pqqqioqJOTk8dHiC7u7yFhogzMzSxsbKWl5eRkpJiY2WdnZ53eXltbm85OzuxUg5OAAABEUlEQVQ4y7WRS7KEIAxFbwwIivj/9/73+Yim7Il2Vw/eGRCTOhUwwXcy+gQAOsg4WAnCVUhf2oENBM5x8CLyZ0EFTrXRTW3mUDgXDeIGX4VxJxUARwcv5Oms0BqQoELEoKkRPfNIV070FjwqohKmDQZ6dQegViEd0njzwAgz+BR7IlsAJlNBZ4Ghw5ai5rnHcgndUe9XhFMgIaLRNyxAZF7Q71iZK4N2ddZGgFXQqSDgpK/OGN+jzl3sLBELueSh65iE78v6EXOCB5rK5glrx3ulpYv+vgFRKJuymWWfdxREk3biJ6GW6J2bnwXln4V2nvePf+GJ+GkOTuLyNIdB9mytJRFvqUmxw9Mzy4PG4Af+AH46CY6DHZXgAAAAAElFTkSuQmCC" />
@@ -979,7 +1351,7 @@ section[name="iconpicker"] {
     </svg>
     <div class="gbs-container">
       <div class="gbs-menu">
-        <svg
+        <div class="gbs-menu__logo-wrap"><svg
           version="1.0"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0,0,284,99"
@@ -1029,7 +1401,7 @@ section[name="iconpicker"] {
               GBS
             </text>
           </g>
-        </svg>
+        </svg><div class="gbs-menu__brand">by Maniaco Game Room</div></div>
         <button
           gbs-section="presets"
           class="gbs-button gbs-button__menu gbs-icon"
@@ -1172,7 +1544,16 @@ section[name="iconpicker"] {
               <li>Para salvar suas customizações, primeiro selecione um slot para o novo perfil, depois salve ou carregue nele.</li>
               <li>Selecionar um slot também o torna o perfil de boot.</li>
             </ul>
+            <div class="gbs-slot-search-wrap" gbs-slot-search-wrap hidden>
+              <input class="gbs-button gbs-slot-search" gbs-slot-search type="search" placeholder="Buscar perfil" autocomplete="off" />
+            </div>
             <div class="gbs-presets" gbs-slot-html></div>
+            <div class="gbs-pager" gbs-pager hidden>
+              <button class="gbs-button gbs-pager__btn" gbs-pager-prev><div class="gbs-icon">keyboard_arrow_left</div></button>
+              <div class="gbs-pager__dots" gbs-pager-dots></div>
+              <button class="gbs-button gbs-pager__btn" gbs-pager-next><div class="gbs-icon">keyboard_arrow_right</div></button>
+            </div>
+            <div class="gbs-slot-counter"><span>Perfis salvos:</span> <span gbs-slot-count>0</span></div>
             <div class="gbs-flex">
               <button
                 class="gbs-button gbs-button__control-action"
@@ -1705,6 +2086,19 @@ section[name="iconpicker"] {
                     <button class="gbs-button gbs-button__control gbs-lang-btn" gbs-lang-value="en" gbs-lang-keep>
                       <div>English</div>
                     </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2">
+                  <span gbs-lang-keep>Tema / Theme</span>
+                  <div class="gbs-theme-picker">
+                    <button class="gbs-button gbs-theme-btn" gbs-theme-value="padrao"><span class="gbs-theme-dots"><i></i><i></i></span><div>Padrão</div></button>
+                    <button class="gbs-button gbs-theme-btn" gbs-theme-value="fosforo"><span class="gbs-theme-dots"><i></i><i></i></span><div>Verde Fósforo</div></button>
+                    <button class="gbs-button gbs-theme-btn" gbs-theme-value="synthwave"><span class="gbs-theme-dots"><i></i><i></i></span><div>Synthwave</div></button>
+                    <button class="gbs-button gbs-theme-btn" gbs-theme-value="ambar"><span class="gbs-theme-dots"><i></i><i></i></span><div>Âmbar CRT</div></button>
+                    <button class="gbs-button gbs-theme-btn" gbs-theme-value="rubi"><span class="gbs-theme-dots"><i></i><i></i></span><div>Rubi Famicom</div></button>
+                    <button class="gbs-button gbs-theme-btn" gbs-theme-value="roxo"><span class="gbs-theme-dots"><i></i><i></i></span><div>Roxo GameCube</div></button>
                   </div>
                 </td>
               </tr>
@@ -2876,11 +3270,228 @@ const deletePreset = () => {
         gbsAlert(t("Erro ao apagar o preset")).catch(() => { });
     });
 };
+// ---- Profile cards: pagination (6 per page), swipe and search ----
+const SLOT_ROW_HEIGHT = 88; // card min-height (80) + margins
+let slotsPerPage = 6;
+const SLOT_SEARCH_MIN_SAVED = 12;
+const slotPager = { page: 0, query: "", userNavigated: false };
+const normalizeSearch = (s) => s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+// Fit as many rows (2 cards each) as the visible area allows instead of a
+// fixed 6 per page; keeps the previous value while the tab is hidden.
+const computeSlotsPerPage = () => {
+    const container = GBSControl.ui.slotContainer;
+    const scroll = document.querySelector(".gbs-scroll");
+    if (!container || !scroll || scroll.clientHeight === 0 || container.offsetParent === null) {
+        return;
+    }
+    const top = container.getBoundingClientRect().top -
+        scroll.getBoundingClientRect().top +
+        scroll.scrollTop;
+    const below = 160; // pager + counter + action buttons + padding
+    const rows = Math.floor((scroll.clientHeight - top - below) / SLOT_ROW_HEIGHT);
+    slotsPerPage = Math.max(3, Math.min(12, rows)) * 2;
+};
+const applySlotPagination = () => {
+    const container = GBSControl.ui.slotContainer;
+    if (!container) {
+        return;
+    }
+    computeSlotsPerPage();
+    const buttons = nodelistToArray(container.querySelectorAll('[gbs-role="slot"]'));
+    const query = normalizeSearch(slotPager.query);
+    const shown = [];
+    let emptyPlaced = false;
+    let savedCount = 0;
+    buttons.forEach((button) => {
+        const name = (button.getAttribute("gbs-name") || "").trim();
+        const isEmpty = name === "Empty";
+        if (!isEmpty) {
+            savedCount++;
+        }
+        let visible;
+        if (isEmpty) {
+            visible = !query && !emptyPlaced;
+            if (visible) {
+                emptyPlaced = true;
+            }
+        }
+        else {
+            visible = !query || normalizeSearch(name).indexOf(query) >= 0;
+        }
+        button.classList.toggle("gbs-slot--filtered", !visible);
+        if (visible) {
+            shown.push(button);
+        }
+    });
+    const pages = Math.max(1, Math.ceil(shown.length / slotsPerPage));
+    slotPager.page = Math.max(0, Math.min(slotPager.page, pages - 1));
+    shown.forEach((button, i) => {
+        button.classList.toggle("gbs-slot--offpage", Math.floor(i / slotsPerPage) !== slotPager.page);
+    });
+    const searchWrap = document.querySelector("[gbs-slot-search-wrap]");
+    if (searchWrap) {
+        if (savedCount > SLOT_SEARCH_MIN_SAVED || slotPager.query) {
+            searchWrap.removeAttribute("hidden");
+        }
+        else {
+            searchWrap.setAttribute("hidden", "");
+        }
+    }
+    if (pages > 1) {
+        container.setAttribute("gbs-paged", "");
+        container.style.minHeight = `${(slotsPerPage / 2) * SLOT_ROW_HEIGHT}px`;
+    }
+    else {
+        container.style.minHeight = "";
+        container.removeAttribute("gbs-paged");
+    }
+    const pager = document.querySelector("[gbs-pager]");
+    const dots = document.querySelector("[gbs-pager-dots]");
+    if (pager && dots) {
+        if (pages > 1) {
+            pager.removeAttribute("hidden");
+            dots.innerHTML = "";
+            for (let p = 0; p < pages; p++) {
+                const dot = document.createElement("span");
+                dot.className = "gbs-pager__dot";
+                if (p === slotPager.page) {
+                    dot.setAttribute("active", "");
+                }
+                dot.addEventListener("click", () => {
+                    slotPager.userNavigated = true;
+                    slotPager.page = p;
+                    applySlotPagination();
+                });
+                dots.appendChild(dot);
+            }
+        }
+        else {
+            pager.setAttribute("hidden", "");
+        }
+    }
+};
+const changeSlotPage = (delta) => {
+    slotPager.userNavigated = true;
+    slotPager.page += delta;
+    applySlotPagination();
+};
+// Only used to open on the active preset's page at load; once the user pages,
+// searches or taps a card, never jump (the device re-syncs the active preset
+// and would pull them back to its page, e.g. when picking an empty slot).
+const showActiveSlotPage = () => {
+    if (slotPager.userNavigated) {
+        return;
+    }
+    const container = GBSControl.ui.slotContainer;
+    const active = container && container.querySelector('[gbs-role="slot"][active]');
+    if (!active) {
+        return;
+    }
+    const visible = nodelistToArray(container.querySelectorAll('[gbs-role="slot"]:not(.gbs-slot--filtered)'));
+    const index = visible.indexOf(active);
+    if (index >= 0) {
+        const page = Math.floor(index / slotsPerPage);
+        if (page !== slotPager.page) {
+            slotPager.page = page;
+            applySlotPagination();
+        }
+    }
+};
+const initSlotPager = () => {
+    const container = GBSControl.ui.slotContainer;
+    const prev = document.querySelector("[gbs-pager-prev]");
+    const next = document.querySelector("[gbs-pager-next]");
+    if (prev) {
+        prev.addEventListener("click", () => changeSlotPage(-1));
+    }
+    if (next) {
+        next.addEventListener("click", () => changeSlotPage(1));
+    }
+    const search = document.querySelector("[gbs-slot-search]");
+    if (search) {
+        search.addEventListener("input", () => {
+            slotPager.userNavigated = true;
+            slotPager.query = search.value;
+            slotPager.page = 0;
+            applySlotPagination();
+        });
+    }
+    if (container) {
+        let startX = 0;
+        let startY = 0;
+        container.addEventListener("touchstart", (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+        container.addEventListener("touchend", (e) => {
+            const dx = e.changedTouches[0].clientX - startX;
+            const dy = e.changedTouches[0].clientY - startY;
+            if (Math.abs(dx) > 50 && Math.abs(dy) < 40) {
+                changeSlotPage(dx < 0 ? 1 : -1);
+            }
+        });
+        const markNavigated = () => {
+            slotPager.userNavigated = true;
+        };
+        container.addEventListener("click", markNavigated, true);
+        container.addEventListener("touchend", markNavigated, true);
+        window.addEventListener("resize", () => applySlotPagination());
+        // Jump to the page of the active preset whenever the active one changes.
+        new MutationObserver(showActiveSlotPage).observe(container, {
+            attributes: true,
+            subtree: true,
+            attributeFilter: ["active"],
+        });
+    }
+    applySlotPagination();
+};
+// ---- Color themes (accent colors only; CSS does the rest via data-theme) ----
+const GBS_THEMES = ["padrao", "fosforo", "synthwave", "ambar", "rubi", "roxo"];
+const applyTheme = (theme) => {
+    if (GBS_THEMES.indexOf(theme) < 0) {
+        theme = "padrao";
+    }
+    document.documentElement.setAttribute("data-theme", theme);
+    try {
+        localStorage.setItem("gbs-theme", theme);
+    }
+    catch (e) { }
+    nodelistToArray(document.querySelectorAll(".gbs-theme-btn")).forEach((b) => {
+        if (b.getAttribute("gbs-theme-value") === theme) {
+            b.setAttribute("active", "");
+        }
+        else {
+            b.removeAttribute("active");
+        }
+    });
+};
+const initThemeSelector = () => {
+    let stored = null;
+    try {
+        stored = localStorage.getItem("gbs-theme");
+    }
+    catch (e) { }
+    nodelistToArray(document.querySelectorAll(".gbs-theme-btn")).forEach((button) => {
+        button.addEventListener("click", () => applyTheme(button.getAttribute("gbs-theme-value")));
+    });
+    applyTheme(stored || "padrao");
+};
 // ---- Language selector (PT-BR default, English optional) ----
 // Portuguese text lives directly in the HTML template / code. English is
 // applied on top of it via this exact-text dictionary; anything not listed
 // (slot names, technical labels) stays untouched.
 const I18N_EN = {
+    "Perfis salvos:": "Saved profiles:",
+    "Buscar perfil": "Search profile",
+    "Padrão": "Default",
+    "Verde Fósforo": "Phosphor Green",
+    "Âmbar CRT": "CRT Amber",
+    "Rubi Famicom": "Famicom Ruby",
+    "Roxo GameCube": "GameCube Purple",
     "Resolução": "Resolution",
     "Escolha uma resolução de saída entre estas predefinições.": "Choose an output resolution from these presets.",
     "Sua seleção também será usada na inicialização. 1280x960 é recomendado para fontes NTSC, 1280x1024 para PAL.": "Your selection will also be used for startup. 1280x960 is recommended for NTSC sources, 1280x1024 for PAL.",
@@ -3106,7 +3717,7 @@ const getSlotsHTML = () => {
     gbs-element-ref="slot-${chr}"
     gbs-role="slot"
     gbs-name="slot-${idx}"
-  ><svg class="gbs-slot-icon"><use gbs-icon-use href="#gbs-slot-icon-0"></use></svg></button>`;
+  ><svg class="gbs-slot-art"><use gbs-icon-use href="#gbs-slot-icon-0"></use></svg></button>`;
     }).join('');
 };
 const setSlot = (slot) => {
@@ -3140,17 +3751,27 @@ const sortSlotButtonsAlphabetically = () => {
     buttons.forEach((button) => container.appendChild(button));
 };
 const updateSlotNames = () => {
+    let savedCount = 0;
     for (let i = 0; i < GBSControl.maxSlots; i++) {
         const el = document.querySelector(`[gbs-slot-id="${i}"]`);
         el.setAttribute("gbs-name", GBSControl.structs.slots[i].name);
         const iconId = GBSControl.slotIcons[i] || 0;
-        const use = el.querySelector("[gbs-icon-use]");
-        if (use) {
+        nodelistToArray(el.querySelectorAll("[gbs-icon-use]")).forEach((use) => {
             use.setAttribute("href", `#gbs-slot-icon-${iconId}`);
+        });
+        const slotName = (GBSControl.structs.slots[i].name || "").trim();
+        if (slotName && slotName !== "Empty") {
+            savedCount++;
         }
         el.setAttribute("gbs-conn", t(CONNECTOR_LABELS[GBSControl.slotConnectors[i]] || ""));
     }
+    const counter = document.querySelector("[gbs-slot-count]");
+    if (counter) {
+        counter.textContent = `${savedCount}/${GBSControl.maxSlots}`;
+    }
     sortSlotButtonsAlphabetically();
+    applySlotPagination();
+    showActiveSlotPage();
     populateStartupPresetOptions();
 };
 let startupPresetValue = null;
@@ -4016,6 +4637,8 @@ const initUI = () => {
     initConnectorPicker();
     initOledPresetDisplayButtons();
     initStartupPresetSelect();
+    initSlotPager();
+    initThemeSelector();
     initLanguageSelector();
 };
 const main = () => {
