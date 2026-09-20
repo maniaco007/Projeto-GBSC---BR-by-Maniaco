@@ -16,13 +16,22 @@
 
 <hr>
 
-<h2>📊 Números da Versão</h2>
+<h2>📊 Números da Versão (v1.0.3)</h2>
 <ul>
-  <li><strong>Firmware Otimizado:</strong> ~898 KB (86% do limite de 1.044.464 bytes)</li>
+  <li><strong>Firmware Otimizado:</strong> ~903 KB (86% do limite de 1.044.464 bytes)</li>
   <li><strong>Customização:</strong> 56 ícones de console, 51 animações de protetor de tela</li>
   <li><strong>Capacidade:</strong> 72 slots de perfil</li>
   <li><strong>Visual:</strong> 6 temas de cor, 2 idiomas integrados na WebUI</li>
 </ul>
+
+<h2>🛡️ Segurança: ninguém perde a própria GBS</h2>
+<p>Uma auditoria completa do firmware, da webui e das ferramentas de atualização (~20 bugs corrigidos, incluindo um que podia travar/reiniciar o aparelho) deixou claro que corrigir bugs não bastava — o próprio processo de atualizar precisava ser à prova de imprevisto. Por isso:</p>
+<ul>
+  <li><strong>Backup automático antes de atualizar:</strong> o <a href="tools/gbsc-updater/">GBSC Updater</a> baixa sozinho seus presets e configurações (e, quando encontra no GitHub, o firmware anterior também) antes de gravar qualquer coisa. Se o backup falhar, a atualização é cancelada.</li>
+  <li><strong>Restaurar com um clique:</strong> não gostou da versão nova, ou algo deu errado? A aba <strong>"Restaurar backup"</strong> regrava o firmware anterior e reenvia seus presets, sem precisar guardar nada manualmente.</li>
+  <li><strong>Aviso de atualização disponível:</strong> a WebUI e o ícone piscando no visor OLED avisam quando há uma versão nova, comparando com os releases publicados aqui no GitHub.</li>
+</ul>
+<p><em>Veja a seção 12 do <a href="https://github.com/maniaco007/Projeto-GBSC---BR-by-Maniaco/blob/ptbr-import/docs/DESCRITIVO_DETALHADO.md">descritivo técnico</a> para os detalhes de como isso funciona por baixo dos panos.</em></p>
 
 <h2>🌍 Tradução e Redesign da Interface (WebUI)</h2>
 <p>Todo o ecossistema do firmware foi localizado e redesenhado, entregando uma experiência 100% nativa e agradável:</p>
@@ -119,6 +128,21 @@
         <td>A tag <code>&lt;fieldset&gt;</code> ignorava propriedades grid/flex e passava da tela.</td>
         <td>CSS ajustado na interface (<code>min-width: 0</code> + grid <code>minmax</code>).</td>
       </tr>
+      <tr>
+        <td><strong>Menu OLED travava e reiniciava (v1.0.3)</strong></td>
+        <td>Com 17+ presets nomeados, faltava reservar espaço pro aviso de "muitos presets" numa lista limitada a 16 posições.</td>
+        <td>Menu reserva a última posição pro aviso quando não cabem todos.</td>
+      </tr>
+      <tr>
+        <td><strong>Wi-Fi não reconectava sozinho (v1.0.3)</strong></td>
+        <td>A supervisão de reconexão só existia na inicialização; uma queda depois disso deixava a GBS desconectada até reboot manual.</td>
+        <td>Detecção de queda + reconexão automática, com retentativa periódica.</td>
+      </tr>
+      <tr>
+        <td><strong>XSS no scan de Wi-Fi da webui (v1.0.3)</strong></td>
+        <td>Nome de rede escaneada entrava direto no HTML sem ser filtrado.</td>
+        <td>Nome da rede escapado antes de entrar na página.</td>
+      </tr>
     </tbody>
   </table>
 </details>
@@ -127,7 +151,7 @@
 
 <h2>💻 Ferramentas e Documentação</h2>
 <ul>
-  <li><strong>GBSC Updater:</strong> Programa próprio para Windows (ou Python em qualquer OS). Atualiza via Wi-Fi (OTA) informando apenas o IP, ou grava via USB na primeira instalação. Lida automaticamente com o serviço OTA do ESP8266 e contorna o Firewall do Windows.</li>
+  <li><strong>GBSC Updater:</strong> Programa próprio para Windows (ou Python em qualquer OS), com três abas: <strong>Atualizar por Wi-Fi</strong> (informando o IP), <strong>Gravar por USB</strong> (primeira instalação) e <strong>Restaurar backup</strong> (desfaz uma atualização com um clique). Faz backup automático dos presets antes de gravar, verifica atualizações no GitHub, lida sozinho com o serviço OTA do ESP8266 e contorna o Firewall do Windows.</li>
   <li><strong>Pipeline de Mídia:</strong> Script <code>make_icon_animation.py</code> que gera automaticamente o código em C++ (<code>OLEDIconAnimations.cpp</code>) a partir dos assets.</li>
   <li><strong>Documentação Inclusa:</strong> <a href="https://github.com/maniaco007/Projeto-GBSC---BR-by-Maniaco/blob/ptbr-import/docs/MANUAL_DE_USO.md">Manual de Uso</a>, <a href="https://github.com/maniaco007/Projeto-GBSC---BR-by-Maniaco/blob/ptbr-import/docs/TUTORIAL_INSTALACAO.md">Tutorial de Instalação</a> passo a passo (Wi-Fi/USB) e este <a href="https://github.com/maniaco007/Projeto-GBSC---BR-by-Maniaco/blob/ptbr-import/docs/DESCRITIVO_DETALHADO.md">descritivo técnico</a>.</li>
 </ul>

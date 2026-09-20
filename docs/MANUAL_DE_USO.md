@@ -199,6 +199,8 @@ Liga o serviço de **atualização de firmware pelo Wi-Fi**. O programa *GBSC Up
 - **Restaurar:** envia um arquivo de cópia de volta para a GBS.
 - A cópia vale para **o mesmo aparelho**.
 
+> **Isso é uma camada extra, não a única proteção.** O programa **GBSC Updater** (usado para atualizar o firmware) já faz esse mesmo backup **sozinho**, automaticamente, antes de gravar qualquer coisa — e cancela a atualização se o backup falhar. Ele também tem uma aba **Restaurar backup** que desfaz uma atualização com um clique (regrava o firmware anterior e reenvia os presets), sem você precisar ter guardado nada manualmente. Veja o [Tutorial de Instalação](TUTORIAL_INSTALACAO.md#voltar-para-a-versão-anterior).
+
 ### 8.4 Wi-Fi
 - **Ponto de Acesso:** a GBS cria a própria rede (`gbscontrol`).
 - **Estação:** a GBS entra na sua rede: toque em **Selecionar Rede**, escolha a rede, digite a senha em **Conectar à Rede** e toque **Conectar**. A GBS reinicia e passa a responder em `http://gbscontrol.local`.
@@ -208,7 +210,10 @@ Liga o serviço de **atualização de firmware pelo Wi-Fi**. O programa *GBSC Up
 ## 9. Perguntas frequentes
 
 **Meus perfis sumiram depois de atualizar.**
-Se você vinha do firmware original (que usava outro sistema de arquivos), a primeira inicialização formata a memória de dados. Por isso o tutorial manda **baixar a cópia antes**; depois use **Cópia → Restaurar**.
+Se você usou o **GBSC Updater**, ele já fez um backup automático antes de gravar — abra o programa, aba **Restaurar backup**, escolha o backup da lista e clique em **Restaurar**. Se você tinha um backup manual (baixado pela webui), use **Cópia → Restaurar**. Se vinha do firmware original (que usava outro sistema de arquivos), a primeira inicialização formata a memória de dados — por isso essas duas camadas de backup existem.
+
+**Atualizei e não gostei, dá pra voltar?**
+Sim — é exatamente pra isso que serve a aba **Restaurar backup** do GBSC Updater: desfaz a atualização regravando o firmware anterior e reenviando seus presets, com um clique. Veja [Voltar para a versão anterior](TUTORIAL_INSTALACAO.md#voltar-para-a-versão-anterior) no tutorial de instalação.
 
 **A página abriu em inglês.**
 Vá em **Configurações → Idioma / Language → Português (BR)**.

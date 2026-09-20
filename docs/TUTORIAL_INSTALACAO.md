@@ -29,13 +29,17 @@ Passo a passo para colocar esta versão na **sua** GBS, em casa, sem saber progr
 
 ---
 
-## Passo 1 — Faça um backup dos seus perfis (Caminho A)
+## Passo 1 — Sobre backup: você está protegido em duas camadas
 
-Se você já usa o GBS-Control:
+Todo o processo de atualização foi pensado pra que você **nunca perca seus presets** e sempre possa **voltar atrás** se algo não sair como esperado:
 
-1. Abra a webui da GBS no navegador (`http://gbscontrol.local` ou o IP dela).
-2. Vá na aba **Sistema** (ícone de raio) → **Cópia** → **Baixar**.
-3. Guarde o arquivo baixado. Se algo der errado, você restaura em **Restaurar**.
+1. **Automático:** ao clicar em Enviar no Caminho A (ou no Caminho B, se você informar o IP da GBS), o **GBSC-Updater já baixa sozinho** uma cópia dos seus presets e configurações antes de gravar qualquer coisa — e, se achar no GitHub, guarda também o firmware que estava rodando. Se esse backup falhar por qualquer motivo, o programa **cancela a atualização** em vez de arriscar seus dados.
+2. **Manual (opcional, mas recomendado):** se você já usa o GBS-Control, pode também baixar uma cópia pela webui, como camada extra:
+   - Abra a webui da GBS no navegador (`http://gbscontrol.local` ou o IP dela).
+   - Vá na aba **Sistema** (ícone de raio) → **Cópia** → **Baixar**.
+   - Guarde o arquivo baixado.
+
+Se depois de atualizar você quiser desfazer, veja **[Voltar para a versão anterior](#voltar-para-a-versão-anterior)** no final deste tutorial — é bem mais simples do que parece.
 
 ---
 
@@ -103,13 +107,22 @@ Recarregue a página da webui — pronto! ✅
 | "A GBS não respondeu ao convite" | Espere 30 s e tente de novo. Se persistir, desligue e ligue a GBS da energia |
 | Lista de portas COM vazia (USB) | Troque o cabo (precisa ser de dados), instale o driver **CH340**, reconecte |
 | "A gravação por USB falhou" | Feche outros programas que usem a porta (Arduino, PlatformIO), tente outra porta USB e, se precisar, marque **Apagar tudo antes** |
-| Perfis sumiram | Use **Sistema → Cópia → Restaurar** com o backup do Passo 1 |
+| Perfis sumiram, ou não gostou da atualização | Use a aba **Restaurar backup** do GBSC-Updater (veja [Voltar para a versão anterior](#voltar-para-a-versão-anterior)) — ou, se preferiu o backup manual, **Sistema → Cópia → Restaurar** na webui |
 | A GBS ficou sem responder após atualizar | Desligue da energia, espere 10 s e ligue de novo. Se persistir, refaça pelo **Caminho B** (USB) |
 
 ---
 
-## Voltar para o firmware original
+## Voltar para a versão anterior
 
-Se quiser voltar ao GBS-Control original, baixe o `.bin` dele no projeto oficial (`ramapcsx2/gbs-control`) e grave com o mesmo **GBSC-Updater** (botão **Escolher...** para selecionar o arquivo), pelo Caminho A ou B.
+Não gostou de uma atualização, ou algo não ficou do jeito esperado? Como o GBSC-Updater fez um backup automático antes de gravar (Passo 1), desfazer é simples:
+
+1. Abra o **GBSC-Updater.exe** e vá na aba **"Restaurar backup"**.
+2. Em **IP da GBS**, digite o IP do aparelho.
+3. Em **Backup**, escolha o backup da lista (mostra a data e a versão de quando foi feito).
+4. Clique em **Restaurar**.
+
+Isso regrava o firmware de antes (quando o programa conseguiu guardar uma cópia dele) **e** reenvia os seus presets e configurações — do jeito que estavam antes da atualização. Não precisa ter guardado nada manualmente: os backups automáticos do Passo 1 ficam na pasta `backups`, do lado do `GBSC-Updater.exe`.
+
+**Se quiser voltar para o GBS-Control original** (sem a versão PT-BR), baixe o `.bin` dele no projeto oficial (`ramapcsx2/gbs-control`) e grave pelo Caminho A ou B, usando o botão **Escolher...** para selecionar esse arquivo em vez do incluído. Nesse caso, restaure seus presets só se o formato de arquivo ainda for compatível — o mais seguro é considerar essa troca como uma reinstalação do zero.
 
 ---

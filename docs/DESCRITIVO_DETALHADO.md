@@ -2,7 +2,7 @@
 
 Registro completo do que foi feito nesta versão do firmware GBS-Control (chip Tvia Trueview5725, controlador ESP8266 / Wemos D1 mini), mantida por **Maniaco Game Room**. Está organizado por área, com o motivo técnico de cada decisão.
 
-**Números finais:** firmware de ~898 KB (86% do limite de 1.044.464 bytes), 56 ícones de console, 51 animações de protetor de tela, 72 slots de perfil, 6 temas de cor, 2 idiomas na webui.
+**Números finais (v1.0.3):** firmware de ~903 KB (86% do limite de 1.044.464 bytes), 56 ícones de console, 51 animações de protetor de tela, 72 slots de perfil, 6 temas de cor, 2 idiomas na webui.
 
 ---
 
@@ -87,7 +87,7 @@ Os bytes desses campos permanecem no arquivo de preferências (sem uso) para nã
 
 ## 9. Ferramentas e distribuição
 
-- **GBSC Updater** (`tools/gbsc-updater/`): programa para Windows (também roda em qualquer sistema com Python) com duas abas — **Atualizar por Wi-Fi (OTA)**, em que basta informar o IP da GBS, e **Gravar por USB** para a primeira instalação. Implementa o protocolo OTA do ESP8266 (convite UDP na porta 8266 + envio por TCP), liga o serviço OTA da GBS automaticamente, valida o arquivo (cabeçalho `0xE9` e tamanho) e trata o Firewall do Windows com novas tentativas automáticas. Veja o [Tutorial](TUTORIAL_INSTALACAO.md).
+- **GBSC Updater** (`tools/gbsc-updater/`): programa para Windows (também roda em qualquer sistema com Python) com três abas — **Atualizar por Wi-Fi (OTA)**, em que basta informar o IP da GBS; **Gravar por USB** para a primeira instalação; e **Restaurar backup**, que desfaz uma atualização com um clique. Implementa o protocolo OTA do ESP8266 (convite UDP na porta 8266 + envio por TCP), liga o serviço OTA da GBS automaticamente, valida o arquivo (cabeçalho `0xE9` e tamanho) e trata o Firewall do Windows com novas tentativas automáticas. Tem também um botão que consulta o release mais recente no GitHub e baixa o `.bin` sozinho. Veja o [Tutorial](TUTORIAL_INSTALACAO.md) e a seção 12 (backup automático).
 - **Documentação**: [Manual de Uso](MANUAL_DE_USO.md), [Tutorial de Instalação](TUTORIAL_INSTALACAO.md) e este descritivo.
 - Pipeline de mídia reprodutível: `scripts/make_icon_animation.py` gera `OLEDIconAnimations.cpp` a partir de `assets_in/icons/animations_manifest.json`.
 
@@ -97,3 +97,26 @@ Os bytes desses campos permanecem no arquivo de preferências (sem uso) para nã
 - Automação para switches SCART / vídeo componente.
 - Menu OLED apenas em português.
 - Código morto residual do "Link Perfil ↔ Entrada" (anotação do último perfil por entrada) pode ser removido numa limpeza futura.
+
+## 11. Correções críticas — v1.0.3
+
+Uma auditoria completa do firmware, da webui e das ferramentas de atualização encontrou e corrigiu cerca de 20 bugs. Os quatro abaixo foram validados na prática, em hardware real (não só por leitura de código ou compilação):
+
+| Bug | Causa raiz | Correção |
+| --- | --- | --- |
+| **Menu OLED travava e reiniciava a GBS** com 17+ presets nomeados | O menu tenta listar todos os presets numa lista de no máximo 16 posições; faltava reservar espaço pro aviso de "muitos presets", então a 17ª entrada estourava o limite | O menu agora reserva a última posição pro aviso quando não cabem todos, em vez de tentar encaixar um item a mais |
+| **A GBS não reconectava ao Wi-Fi sozinha** depois de uma queda de conexão | A supervisão de reconexão só existia na inicialização; depois de conectar uma vez, uma queda (roteador reiniciou, sinal caiu) deixava a GBS desconectada até um reboot manual | Detecção de queda + reconexão automática, incluindo retentativa periódica pra voltar do modo Ponto de Acesso quando a rede salva reaparece |
+| **Apagar/salvar presets podia corromper dados** (nomes duplicados, contador errado) | Consequência do bug do menu OLED acima: um reinício no meio da gravação dos arquivos de preset deixava o índice de nomes (`slots.bin`) dessincronizado dos arquivos de dados reais | Corrigido na raiz (a causa do reinício); ver também seção 12 sobre a rede de segurança que cobre esse tipo de cenário daqui pra frente |
+| **XSS na aba Wi-Fi da webui** | O nome de uma rede escaneada entrava direto no HTML da lista sem ser filtrado — uma rede com nome malicioso podia executar código na sessão da webui de quem escaneasse | Nome da rede escapado antes de entrar na página |
+
+Lista completa das correções (menores, mas reais) nas [notas do release v1.0.3](https://github.com/maniaco007/Projeto-GBSC---BR-by-Maniaco/releases/tag/v1.0.3).
+
+## 12. Segurança do processo de atualização
+
+Depois de encontrar o bug do menu OLED acima — que reiniciava a GBS no pior momento possível, no meio de uma gravação de dados — ficou claro que "corrigir o bug" não bastava: o processo de atualizar o firmware em si precisava ser resistente a esse tipo de imprevisto. Três recursos novos, pensados juntos:
+
+- **Checagem de atualização pelo GitHub**: a webui compara a versão da GBS (exposta em `/gbs/version`) com o release mais recente deste repositório e mostra um aviso quando há algo novo. O GBSC Updater tem o mesmo botão, que já baixa o `.bin` sozinho.
+- **Alerta no visor OLED**: quando a webui encontra uma atualização, ela avisa a GBS (`/gbs/update-available`) pra acender um ícone de alerta piscando no menu e no protetor de tela — assim a pessoa não depende de estar olhando a webui no momento certo.
+- **Backup automático + restauração de um clique no GBSC Updater**: antes de qualquer gravação, o programa baixa sozinho todos os presets/configurações da GBS (reaproveitando o mesmo formato e os mesmos endpoints do backup manual da webui, `/spiffs/dir` + `/spiffs/download` + `/spiffs/upload`) e, quando acha a versão atual publicada no GitHub, guarda também esse firmware. Se o backup falhar, a atualização é cancelada — o programa não segue adiante sem essa rede de segurança. A aba **Restaurar backup** faz o caminho inverso: regrava o firmware daquela época (se foi salvo) e reenvia os dados, nessa ordem (firmware primeiro, já que ele reinicia a GBS; dados depois).
+
+A ideia por trás dos três: **ninguém deveria perder os presets da própria GBS, nem ficar sem um jeito fácil de voltar atrás, por causa de uma atualização** — nem quando o firmware novo tem um bug, nem quando a pessoa simplesmente prefere a versão anterior.

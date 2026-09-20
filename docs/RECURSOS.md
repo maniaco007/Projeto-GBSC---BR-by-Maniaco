@@ -1,6 +1,6 @@
 # GBS-Control PT-BR by Maniaco — Documentação de Recursos
 
-Atualizado em 18-09-2029.
+Atualizado em 20-09-2026.
 
 ## Visão Geral
 
@@ -18,16 +18,18 @@ Este projeto é uma tradução e evolução em PT-BR do firmware [GBS-Control](h
 
 ## Como Atualizar o Firmware (OTA)
 
-Como não dá pra plugar o aparelho via USB no ambiente onde o código é gerado, toda atualização vai por Wi-Fi (OTA — Over-The-Air). Passo a passo:
+Pra quem só quer usar (não desenvolver), o caminho é o **GBSC Updater** (`tools/gbsc-updater/`) — informa o IP da GBS e clica em Enviar, sem linha de comando. Veja o [Tutorial de Instalação](TUTORIAL_INSTALACAO.md).
+
+Pra quem está desenvolvendo (ambiente sem GBS plugada via USB), o caminho direto por linha de comando continua funcionando:
 
 1. A GBS precisa estar ligada e conectada na sua rede Wi-Fi.
 2. Habilita o modo OTA no aparelho: `curl http://<ip-da-gbs>/sc?c` (ou acessando essa URL pelo navegador). Isso liga o receptor ArduinoOTA por um tempo limitado.
-3. Envia o firmware novo: `pio run -e d1_mini -t upload --upload-port <ip-da-gbs>`.
+3. Envia o firmware novo: `pio run -e d1_mini -t upload --upload-port <ip-da-gbs>` (ou `python tools/gbsc-updater/gbsc_updater.py --ota <ip-da-gbs> <arquivo.bin>`, que reaproveita o mesmo protocolo).
 4. O aparelho reinicia sozinho com o firmware novo (leva uns 10-15s).
 
 O IP pode ser descoberto por `gbscontrol.local` (mDNS) quando a rede suporta, ou direto pelo roteador.
 
-**Backup antes de mudanças arriscadas:** sempre que uma atualização mexe no sistema de arquivos (como a migração SPIFFS→LittleFS), é feito um backup completo antes (presets, `preferencesv2.txt`, `slots.bin`, `slot_icons.bin`) via `/spiffs/dir` + download de cada arquivo, do jeito que a própria webui espera pra restaurar.
+**Backup automático:** o GBSC Updater faz esse backup completo **sozinho** antes de qualquer gravação (presets, `preferencesv2.txt`, `slots.bin`, ícones/conectores/entradas por slot, e o firmware anterior quando acha a versão no GitHub) — cancela a atualização se o backup falhar, e tem uma aba própria (**Restaurar backup**) pra desfazer com um clique. Isso é o mesmo mecanismo que a webui usa (`/spiffs/dir` + download/upload de cada arquivo), só que automatizado. Detalhes em `docs/DESCRITIVO_DETALHADO.md` (seção 12).
 
 ## Novos Controles na Webui
 
