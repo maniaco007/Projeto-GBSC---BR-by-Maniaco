@@ -23,8 +23,8 @@ Isso é **além** do backup manual que a webui já oferece (Sistema → Cópia �
 ```bash
 pip install esptool
 python gbsc_updater.py                              # abre a janela
-python gbsc_updater.py --ota 192.168.0.70 firmware/GBSC-PTBR-v1.0.3.bin
-python gbsc_updater.py --usb COM5 firmware/GBSC-PTBR-v1.0.3.bin
+python gbsc_updater.py --ota 192.168.0.70 firmware/GBSC-PTBR-v1.0.4.bin
+python gbsc_updater.py --usb COM5 firmware/GBSC-PTBR-v1.0.4.bin
 ```
 
 Os comandos `--ota`/`--usb` acima são o modo direto (sem janela, útil pra testes) e **não fazem** o backup automático — esse é um recurso da interface gráfica. Pra ter o backup, abra o programa sem argumentos e use os botões normalmente.

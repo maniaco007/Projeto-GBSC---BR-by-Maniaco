@@ -2,7 +2,7 @@
 
 Registro completo do que foi feito nesta versão do firmware GBS-Control (chip Tvia Trueview5725, controlador ESP8266 / Wemos D1 mini), mantida por **Maniaco Game Room**. Está organizado por área, com o motivo técnico de cada decisão.
 
-**Números finais (v1.0.3):** firmware de ~903 KB (86% do limite de 1.044.464 bytes), 56 ícones de console, 51 animações de protetor de tela, 72 slots de perfil, 6 temas de cor, 2 idiomas na webui.
+**Números finais (v1.0.4):** firmware de ~903 KB (86% do limite de 1.044.464 bytes), 56 ícones de console, 51 animações de protetor de tela, 72 slots de perfil, 6 temas de cor, 2 idiomas na webui.
 
 ---
 
@@ -111,7 +111,7 @@ Uma auditoria completa do firmware, da webui e das ferramentas de atualização 
 
 Lista completa das correções (menores, mas reais) nas [notas do release v1.0.3](https://github.com/maniaco007/Projeto-GBSC---BR-by-Maniaco/releases/tag/v1.0.3).
 
-## 12. Segurança do processo de atualização
+## 12. Segurança do processo de atualização (v1.0.3 / v1.0.4)
 
 Depois de encontrar o bug do menu OLED acima — que reiniciava a GBS no pior momento possível, no meio de uma gravação de dados — ficou claro que "corrigir o bug" não bastava: o processo de atualizar o firmware em si precisava ser resistente a esse tipo de imprevisto. Três recursos novos, pensados juntos:
 

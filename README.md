@@ -16,7 +16,7 @@
 
 <hr>
 
-<h2>📊 Números da Versão (v1.0.3)</h2>
+<h2>📊 Números da Versão (v1.0.4)</h2>
 <ul>
   <li><strong>Firmware Otimizado:</strong> ~903 KB (86% do limite de 1.044.464 bytes)</li>
   <li><strong>Customização:</strong> 56 ícones de console, 51 animações de protetor de tela</li>

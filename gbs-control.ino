@@ -32,7 +32,7 @@
 // Bump on every release. Exposed via /gbs/version so the webui and the
 // GBSC Updater can compare against the latest GitHub release and tell the
 // user an update is available.
-#define FIRMWARE_VERSION "1.0.3"
+#define FIRMWARE_VERSION "1.0.4"
 
 
 static inline void writeBytes(uint8_t slaveRegister, uint8_t *values, uint8_t numValues);
