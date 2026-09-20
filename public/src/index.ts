@@ -138,6 +138,7 @@ const GBSControl = {
     terminal: null,
     toggleList: null,
     toggleSwichList: null,
+    updateBanner: null,
     webSocketConnectionWarning: null,
     wifiConnect: null,
     wifiConnectButton: null,
@@ -869,6 +870,7 @@ const I18N_EN: { [pt: string]: string } = {
   "Falha ao apagar o preset": "Failed to delete the preset",
   "Erro ao apagar o preset": "Error deleting the preset",
   "Erro ao salvar o preset": "Error saving the preset",
+  "Atualização disponível": "Update available",
   "Arquivo de cópia inválido": "Invalid backup file",
   "Reiniciando o GBSControl.\nAguarde o wifi reconectar e clique OK": "Restarting GBSControl.\nWait for wifi to reconnect and click OK",
   "Trocando para o modo Ponto de Acesso. Conecte-se ao SSID gbscontrol e clique OK": "Switching to Access Point mode. Connect to the gbscontrol SSID and click OK",
@@ -1192,6 +1194,7 @@ const fetchSlotNamesAndInit = () => {
         return;
       }
       initUIElements();
+      checkForUpdate();
       wifiGetStatus().then(() => {
         initUI();
         updateSlotNames();
@@ -1807,6 +1810,60 @@ const initUnloadListener = () => {
   });
 };
 
+// Checks the device's own reported version against the latest GitHub
+// release, and shows a small link in the header if a newer one exists.
+// Actually downloading/flashing a new firmware happens in the GBSC
+// Updater desktop app, not here - this is just a heads-up.
+const GITHUB_REPO = "maniaco007/Projeto-GBSC---BR-by-Maniaco";
+
+// Parses "v1.0.10" / "1.0.10" into [1, 0, 10] for a numeric comparison -
+// a plain string compare would put "1.0.10" before "1.0.9".
+const parseVersion = (v: string): number[] =>
+  (v.match(/\d+/g) || ["0"]).map((n) => parseInt(n, 10));
+
+const isNewerVersion = (remote: string, local: string): boolean => {
+  const r = parseVersion(remote);
+  const l = parseVersion(local);
+  for (let i = 0; i < Math.max(r.length, l.length); i++) {
+    const rv = r[i] || 0;
+    const lv = l[i] || 0;
+    if (rv !== lv) {
+      return rv > lv;
+    }
+  }
+  return false;
+};
+
+// Best-effort and silent: no internet, GitHub unreachable, API rate
+// limit, older firmware without /gbs/version - any of those just skip
+// the banner instead of interrupting normal use of the device.
+const checkForUpdate = () => {
+  const banner = GBSControl.ui.updateBanner;
+  if (!banner) {
+    return;
+  }
+  fetch(`/gbs/version?${+new Date()}`)
+    .then((r) => r.json())
+    .then((deviceInfo: { version: string }) =>
+      fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`)
+        .then((r) => r.json())
+        .then((release: { tag_name?: string; html_url?: string }) => {
+          if (
+            release.tag_name &&
+            release.html_url &&
+            isNewerVersion(release.tag_name, deviceInfo.version)
+          ) {
+            banner.textContent = `${t("Atualização disponível")}: ${
+              release.tag_name
+            }`;
+            banner.setAttribute("href", release.html_url);
+            banner.removeAttribute("hidden");
+          }
+        })
+    )
+    .catch(() => {});
+};
+
 const initSlotButtons = () => {
   GBSControl.ui.slotContainer.innerHTML = getSlotsHTML();
   GBSControl.ui.slotButtonList = nodelistToArray(
@@ -1826,6 +1883,7 @@ const initUIElements = () => {
     ) as HTMLElement[],
     toggleList: document.querySelectorAll("[gbs-toggle]"),
     toggleSwichList: document.querySelectorAll("[gbs-toggle-switch]"),
+    updateBanner: document.querySelector("[gbs-update-banner]"),
     wifiList: document.querySelector("[gbs-wifi-list]"),
     wifiListTable: document.querySelector(".gbs-wifi__list"),
     wifiConnect: document.querySelector(".gsb-wifi__connect"),

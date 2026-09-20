@@ -15,11 +15,13 @@ Modo texto (sem janela), util para testes:
 import argparse
 import glob
 import hashlib
+import json
 import os
 import queue
 import re
 import socket
 import sys
+import tempfile
 import threading
 import urllib.request
 
@@ -29,6 +31,7 @@ OTA_PORT = 8266
 CHUNK = 1460
 MIN_FW = 200 * 1024
 MAX_FW = 1044464  # tamanho maximo de programa da D1 mini (layout 4m1m)
+GITHUB_REPO = "maniaco007/Projeto-GBSC---BR-by-Maniaco"
 
 
 class UpdateError(Exception):
@@ -63,6 +66,73 @@ def bundled_firmware():
         key=_firmware_sort_key,
     )
     return files[-1] if files else ""
+
+
+def _parse_version(v):
+    """Extrai os numeros de uma string de versao tipo 'v1.0.10' ou '1.0.10'
+    para comparar numericamente - uma comparacao de texto colocaria
+    "1.0.10" antes de "1.0.9"."""
+    numbers = tuple(int(n) for n in re.findall(r"\d+", v or ""))
+    return numbers or (0,)
+
+
+def is_newer_version(remote, local):
+    return _parse_version(remote) > _parse_version(local)
+
+
+def fetch_latest_release_info():
+    """Consulta a API do GitHub e retorna (tag, url_do_bin, nome_do_arquivo)
+    do release mais recente publicado no repositorio do projeto."""
+    url = "https://api.github.com/repos/%s/releases/latest" % GITHUB_REPO
+    req = urllib.request.Request(
+        url, headers={"Accept": "application/vnd.github+json", "User-Agent": APP_NAME}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.load(resp)
+    except Exception as exc:  # noqa: BLE001
+        raise UpdateError(
+            "Nao consegui checar atualizacoes no GitHub (%s).\n"
+            "Confira sua conexao com a internet." % exc
+        )
+    tag = data.get("tag_name", "")
+    asset = next(
+        (a for a in data.get("assets", []) if a.get("name", "").lower().endswith(".bin")),
+        None,
+    )
+    if not tag or not asset:
+        raise UpdateError("O release mais recente no GitHub nao tem um arquivo .bin anexado.")
+    return tag, asset["browser_download_url"], asset["name"]
+
+
+def fetch_device_version(ip):
+    """Pergunta pra GBS qual firmware ela esta rodando (endpoint
+    /gbs/version). Retorna string vazia se nao responder ou for um
+    firmware antigo sem esse endpoint - tratado como "desconhecido" por
+    quem chama, nao como erro."""
+    try:
+        with urllib.request.urlopen("http://%s/gbs/version" % ip, timeout=6) as resp:
+            return json.load(resp).get("version", "")
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def download_github_asset(url, dest_path, log, progress):
+    req = urllib.request.Request(url, headers={"User-Agent": APP_NAME})
+    downloaded = 0
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        total = int(resp.headers.get("Content-Length", 0)) or MAX_FW
+        with open(dest_path, "wb") as f:
+            while True:
+                chunk = resp.read(65536)
+                if not chunk:
+                    break
+                f.write(chunk)
+                downloaded += len(chunk)
+                progress(min(downloaded / float(total), 1.0))
+    if downloaded < MIN_FW:
+        raise UpdateError("O download do GitHub veio incompleto ou invalido.")
+    log("Baixado: %s (%d KB)" % (os.path.basename(dest_path), downloaded // 1024))
 
 
 def check_firmware_file(path):
@@ -256,6 +326,9 @@ def run_gui():
     cancel = threading.Event()
     state = {"busy": False}
 
+    def log(msg):
+        messages.put(("log", msg))
+
     fw_default = bundled_firmware()
 
     header = ttk.Label(
@@ -293,6 +366,8 @@ def run_gui():
             var.set(chosen)
 
     ttk.Button(ota_tab, text="Escolher...", command=lambda: pick(ota_file)).grid(row=2, column=2, pady=(8, 0))
+    check_update_btn = ttk.Button(ota_tab, text="Verificar atualizacao no GitHub")
+    check_update_btn.grid(row=3, column=0, columnspan=3, sticky="w", pady=(10, 0))
     ota_tab.columnconfigure(1, weight=1)
 
     # ---- aba USB ----
@@ -366,9 +441,84 @@ def run_gui():
                         messagebox.showerror(APP_NAME, value)
                     else:
                         messagebox.showinfo(APP_NAME, "Tudo certo! A GBS vai reiniciar.")
+                elif kind == "update_check_error":
+                    state["busy"] = False
+                    check_update_btn.configure(state="normal")
+                    messagebox.showerror(APP_NAME, value)
+                elif kind == "update_check_result":
+                    state["busy"] = False
+                    check_update_btn.configure(state="normal")
+                    tag, url, name, local_version = value
+                    if local_version and not is_newer_version(tag, local_version):
+                        messagebox.showinfo(
+                            APP_NAME, "Voce ja esta na versao mais recente (%s)." % local_version
+                        )
+                        continue
+                    msg = "Versao mais recente no GitHub: %s" % tag
+                    msg += (
+                        "\nVersao atual da GBS: %s" % local_version
+                        if local_version
+                        else "\n(nao consegui confirmar a versao atual da GBS - confira o IP)"
+                    )
+                    msg += "\n\nBaixar agora?"
+                    if messagebox.askyesno(APP_NAME, msg):
+                        dest = os.path.join(tempfile.gettempdir(), name)
+                        state["busy"] = True
+                        check_update_btn.configure(state="disabled")
+                        progress["value"] = 0
+
+                        def download_work(url=url, dest=dest):
+                            derror = ""
+                            try:
+                                download_github_asset(
+                                    url, dest, log, lambda v: messages.put(("progress", v))
+                                )
+                            except UpdateError as exc:
+                                derror = str(exc)
+                            except Exception as exc:  # noqa: BLE001
+                                derror = "Erro inesperado: %s" % exc
+                            messages.put(("update_downloaded", (dest, derror)))
+
+                        threading.Thread(target=download_work, daemon=True).start()
+                elif kind == "update_downloaded":
+                    state["busy"] = False
+                    check_update_btn.configure(state="normal")
+                    dest, derror = value
+                    if derror:
+                        messagebox.showerror(APP_NAME, derror)
+                    else:
+                        ota_file.set(dest)
+                        notebook.select(0)
+                        messagebox.showinfo(
+                            APP_NAME,
+                            "Firmware baixado!\nClique em 'Enviar / Gravar' para atualizar a GBS agora.",
+                        )
         except queue.Empty:
             pass
         root.after(100, pump)
+
+    def check_for_update():
+        if state["busy"]:
+            return
+        ip = ip_var.get().strip()
+        state["busy"] = True
+        check_update_btn.configure(state="disabled")
+
+        def work():
+            try:
+                tag, url, name = fetch_latest_release_info()
+            except UpdateError as exc:
+                messages.put(("update_check_error", str(exc)))
+                return
+            except Exception as exc:  # noqa: BLE001
+                messages.put(("update_check_error", "Erro inesperado: %s" % exc))
+                return
+            local_version = fetch_device_version(ip) if ip and not ip.endswith(".") else ""
+            messages.put(("update_check_result", (tag, url, name, local_version)))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    check_update_btn.configure(command=check_for_update)
 
     def start():
         if state["busy"]:
@@ -394,9 +544,6 @@ def run_gui():
         # pra interromper com seguranca. Por isso o botao fica desabilitado
         # nessa aba, em vez de dar a falsa impressao de que cancelar funciona.
         cancel_btn.configure(state="disabled" if use_usb else "normal")
-
-        def log(msg):
-            messages.put(("log", msg))
 
         def work():
             error = ""

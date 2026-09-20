@@ -280,6 +280,14 @@
           bolt
         </button>
       </div>
+      <a
+        class="gbs-button gbs-button__secondary"
+        gbs-update-banner
+        hidden
+        target="_blank"
+        rel="noopener"
+        style="display: block; margin: 8px 8px 0; padding: 8px; text-align: center; width: auto"
+      ></a>
       <div class="gbs-scroll">
         <section name="presets">
           <fieldset class="gbs-fieldset" style="padding: 8px 2px">

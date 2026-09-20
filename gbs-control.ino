@@ -29,6 +29,10 @@
 
 #define HAVE_BUTTONS 0
 #define USE_NEW_OLED_MENU 1
+// Bump on every release. Exposed via /gbs/version so the webui and the
+// GBSC Updater can compare against the latest GitHub release and tell the
+// user an update is available.
+#define FIRMWARE_VERSION "1.0.3"
 
 
 static inline void writeBytes(uint8_t slaveRegister, uint8_t *values, uint8_t numValues);
@@ -10103,6 +10107,10 @@ void startWebserver()
             }
         }
         request->send(200, "application/json", result ? "true" : "false");
+    });
+
+    server.on("/gbs/version", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(200, "application/json", "{\"version\":\"" FIRMWARE_VERSION "\"}");
     });
 
     server.on("/gbs/heap", HTTP_GET, [](AsyncWebServerRequest *request) {

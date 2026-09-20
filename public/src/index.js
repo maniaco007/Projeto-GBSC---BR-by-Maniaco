@@ -115,6 +115,7 @@ const GBSControl = {
         terminal: null,
         toggleList: null,
         toggleSwichList: null,
+        updateBanner: null,
         webSocketConnectionWarning: null,
         wifiConnect: null,
         wifiConnectButton: null,
@@ -207,104 +208,110 @@ const createWebSocket = () => {
         clearTimeout(GBSControl.wsTimeout);
         GBSControl.wsTimeout = setTimeout(timeOutWs, 4000);
         GBSControl.isWsActive = true;
-        const [messageDataAt0, messageDataAt1, messageDataAt2, messageDataAt3, messageDataAt4, messageDataAt5,] = message.data;
-        if (messageDataAt0 != "#") {
-            GBSControl.queuedText += message.data;
-            GBSControl.dataQueued += message.data.length;
-            if (GBSControl.dataQueued >= 70000) {
-                GBSControl.ui.terminal.value = "";
-                GBSControl.dataQueued = 0;
+        try {
+            const [messageDataAt0, messageDataAt1, messageDataAt2, messageDataAt3, messageDataAt4, messageDataAt5,] = message.data;
+            if (messageDataAt0 != "#") {
+                GBSControl.queuedText += message.data;
+                GBSControl.dataQueued += message.data.length;
+                if (GBSControl.dataQueued >= 70000) {
+                    GBSControl.ui.terminal.value = "";
+                    GBSControl.dataQueued = 0;
+                }
+            }
+            else {
+                const presetId = GBSControl.buttonMapping[messageDataAt1];
+                const presetEl = document.querySelector(`[gbs-element-ref="${presetId}"]`);
+                const activePresetButton = presetEl
+                    ? presetEl.getAttribute("gbs-element-ref")
+                    : "none";
+                GBSControl.ui.presetButtonList.forEach(toggleButtonActive(activePresetButton));
+                const slotId = "slot-" + messageDataAt2;
+                const activeSlotButton = document.querySelector(`[gbs-element-ref="${slotId}"]`);
+                if (activeSlotButton) {
+                    GBSControl.ui.slotButtonList.forEach(toggleButtonActive(slotId));
+                }
+                if (messageDataAt3 && messageDataAt4 && messageDataAt5) {
+                    const optionByte0 = messageDataAt3.charCodeAt(0);
+                    const optionByte1 = messageDataAt4.charCodeAt(0);
+                    const optionByte2 = messageDataAt5.charCodeAt(0);
+                    const optionButtonList = [
+                        ...nodelistToArray(GBSControl.ui.toggleList),
+                        ...nodelistToArray(GBSControl.ui.toggleSwichList),
+                    ];
+                    const toggleMethod = (button, mode) => {
+                        if (button.tagName === "TD") {
+                            button.innerText = mode ? "toggle_on" : "toggle_off";
+                        }
+                        button = button.tagName !== "TD" ? button : button.parentElement;
+                        if (mode) {
+                            button.setAttribute("active", "");
+                        }
+                        else {
+                            button.removeAttribute("active");
+                        }
+                    };
+                    optionButtonList.forEach((button) => {
+                        const toggleData = button.getAttribute("gbs-toggle") ||
+                            button.getAttribute("gbs-toggle-switch");
+                        switch (toggleData) {
+                            case "adcAutoGain":
+                                toggleMethod(button, (optionByte0 & 0x01) == 0x01);
+                                break;
+                            case "scanlines":
+                                toggleMethod(button, (optionByte0 & 0x02) == 0x02);
+                                break;
+                            case "vdsLineFilter":
+                                toggleMethod(button, (optionByte0 & 0x04) == 0x04);
+                                break;
+                            case "peaking":
+                                toggleMethod(button, (optionByte0 & 0x08) == 0x08);
+                                break;
+                            case "palForce60":
+                                toggleMethod(button, (optionByte0 & 0x10) == 0x10);
+                                break;
+                            case "wantOutputComponent":
+                                toggleMethod(button, (optionByte0 & 0x20) == 0x20);
+                                break;
+                            /** 1 */
+                            case "matched":
+                                toggleMethod(button, (optionByte1 & 0x01) == 0x01);
+                                break;
+                            case "frameTimeLock":
+                                toggleMethod(button, (optionByte1 & 0x02) == 0x02);
+                                break;
+                            case "motionAdaptive":
+                                toggleMethod(button, (optionByte1 & 0x04) == 0x04);
+                                break;
+                            case "bob":
+                                toggleMethod(button, (optionByte1 & 0x04) != 0x04);
+                                break;
+                            // case "tap6":
+                            //   toggleMethod(button, (optionByte1 & 0x08) != 0x04);
+                            //   break;
+                            case "step":
+                                toggleMethod(button, (optionByte1 & 0x10) == 0x10);
+                                break;
+                            case "fullHeight":
+                                toggleMethod(button, (optionByte1 & 0x20) == 0x20);
+                                break;
+                            /** 2 */
+                            case "enableCalibrationADC":
+                                toggleMethod(button, (optionByte2 & 0x01) == 0x01);
+                                break;
+                            case "preferScalingRgbhv":
+                                toggleMethod(button, (optionByte2 & 0x02) == 0x02);
+                                break;
+                            case "disableExternalClockGenerator":
+                                toggleMethod(button, (optionByte2 & 0x04) == 0x04);
+                                break;
+                        }
+                    });
+                }
             }
         }
-        else {
-            const presetId = GBSControl.buttonMapping[messageDataAt1];
-            const presetEl = document.querySelector(`[gbs-element-ref="${presetId}"]`);
-            const activePresetButton = presetEl
-                ? presetEl.getAttribute("gbs-element-ref")
-                : "none";
-            GBSControl.ui.presetButtonList.forEach(toggleButtonActive(activePresetButton));
-            const slotId = "slot-" + messageDataAt2;
-            const activeSlotButton = document.querySelector(`[gbs-element-ref="${slotId}"]`);
-            if (activeSlotButton) {
-                GBSControl.ui.slotButtonList.forEach(toggleButtonActive(slotId));
-            }
-            if (messageDataAt3 && messageDataAt4 && messageDataAt5) {
-                const optionByte0 = messageDataAt3.charCodeAt(0);
-                const optionByte1 = messageDataAt4.charCodeAt(0);
-                const optionByte2 = messageDataAt5.charCodeAt(0);
-                const optionButtonList = [
-                    ...nodelistToArray(GBSControl.ui.toggleList),
-                    ...nodelistToArray(GBSControl.ui.toggleSwichList),
-                ];
-                const toggleMethod = (button, mode) => {
-                    if (button.tagName === "TD") {
-                        button.innerText = mode ? "toggle_on" : "toggle_off";
-                    }
-                    button = button.tagName !== "TD" ? button : button.parentElement;
-                    if (mode) {
-                        button.setAttribute("active", "");
-                    }
-                    else {
-                        button.removeAttribute("active");
-                    }
-                };
-                optionButtonList.forEach((button) => {
-                    const toggleData = button.getAttribute("gbs-toggle") ||
-                        button.getAttribute("gbs-toggle-switch");
-                    switch (toggleData) {
-                        case "adcAutoGain":
-                            toggleMethod(button, (optionByte0 & 0x01) == 0x01);
-                            break;
-                        case "scanlines":
-                            toggleMethod(button, (optionByte0 & 0x02) == 0x02);
-                            break;
-                        case "vdsLineFilter":
-                            toggleMethod(button, (optionByte0 & 0x04) == 0x04);
-                            break;
-                        case "peaking":
-                            toggleMethod(button, (optionByte0 & 0x08) == 0x08);
-                            break;
-                        case "palForce60":
-                            toggleMethod(button, (optionByte0 & 0x10) == 0x10);
-                            break;
-                        case "wantOutputComponent":
-                            toggleMethod(button, (optionByte0 & 0x20) == 0x20);
-                            break;
-                        /** 1 */
-                        case "matched":
-                            toggleMethod(button, (optionByte1 & 0x01) == 0x01);
-                            break;
-                        case "frameTimeLock":
-                            toggleMethod(button, (optionByte1 & 0x02) == 0x02);
-                            break;
-                        case "motionAdaptive":
-                            toggleMethod(button, (optionByte1 & 0x04) == 0x04);
-                            break;
-                        case "bob":
-                            toggleMethod(button, (optionByte1 & 0x04) != 0x04);
-                            break;
-                        // case "tap6":
-                        //   toggleMethod(button, (optionByte1 & 0x08) != 0x04);
-                        //   break;
-                        case "step":
-                            toggleMethod(button, (optionByte1 & 0x10) == 0x10);
-                            break;
-                        case "fullHeight":
-                            toggleMethod(button, (optionByte1 & 0x20) == 0x20);
-                            break;
-                        /** 2 */
-                        case "enableCalibrationADC":
-                            toggleMethod(button, (optionByte2 & 0x01) == 0x01);
-                            break;
-                        case "preferScalingRgbhv":
-                            toggleMethod(button, (optionByte2 & 0x02) == 0x02);
-                            break;
-                        case "disableExternalClockGenerator":
-                            toggleMethod(button, (optionByte2 & 0x04) == 0x04);
-                            break;
-                    }
-                });
-            }
+        catch (e) {
+            console.warn("Malformed websocket message", e);
+            return;
         }
     };
 };
@@ -369,7 +376,8 @@ const savePreset = () => {
             gbsIconPrompt(currentIconId)
                 .catch(() => currentIconId)
                 .then((iconId) => {
-                fetch(`/slot/save?index=${currentIndex}&name=${currentName.substring(0, 24)}&icon=${iconId}&conn=${connector}&${+new Date()}`).then(() => {
+                fetch(`/slot/save?index=${currentIndex}&name=${currentName.substring(0, 24)}&icon=${iconId}&conn=${connector}&${+new Date()}`)
+                    .then(() => {
                     loadUser("4").then(() => {
                         setTimeout(() => {
                             fetchSlotNames().then((success) => {
@@ -379,6 +387,9 @@ const savePreset = () => {
                             });
                         }, 500);
                     });
+                })
+                    .catch(() => {
+                    gbsAlert(t("Erro ao salvar o preset")).catch(() => { });
                 });
             });
         }
@@ -755,6 +766,8 @@ const I18N_EN = {
     "Nome do slot": "Slot name",
     "Falha ao apagar o preset": "Failed to delete the preset",
     "Erro ao apagar o preset": "Error deleting the preset",
+    "Erro ao salvar o preset": "Error saving the preset",
+    "Atualização disponível": "Update available",
     "Arquivo de cópia inválido": "Invalid backup file",
     "Reiniciando o GBSControl.\nAguarde o wifi reconectar e clique OK": "Restarting GBSControl.\nWait for wifi to reconnect and click OK",
     "Trocando para o modo Ponto de Acesso. Conecte-se ao SSID gbscontrol e clique OK": "Switching to Access Point mode. Connect to the gbscontrol SSID and click OK",
@@ -908,21 +921,26 @@ const sortSlotButtonsAlphabetically = () => {
         }
         return nameA.localeCompare(nameB, "pt-BR", { sensitivity: "base" });
     });
-    buttons.forEach((button) => container.appendChild(button));
+    const fragment = document.createDocumentFragment();
+    buttons.forEach((button) => fragment.appendChild(button));
+    container.appendChild(fragment);
 };
 const updateSlotNames = () => {
     let savedCount = 0;
     for (let i = 0; i < GBSControl.maxSlots; i++) {
+        const slotName = (GBSControl.structs.slots[i].name || "").trim();
+        if (slotName && slotName !== "Empty") {
+            savedCount++;
+        }
         const el = document.querySelector(`[gbs-slot-id="${i}"]`);
+        if (!el) {
+            continue;
+        }
         el.setAttribute("gbs-name", GBSControl.structs.slots[i].name);
         const iconId = GBSControl.slotIcons[i] || 0;
         nodelistToArray(el.querySelectorAll("[gbs-icon-use]")).forEach((use) => {
             use.setAttribute("href", `#gbs-slot-icon-${iconId}`);
         });
-        const slotName = (GBSControl.structs.slots[i].name || "").trim();
-        if (slotName && slotName !== "Empty") {
-            savedCount++;
-        }
         el.setAttribute("gbs-conn", t(CONNECTOR_LABELS[GBSControl.slotConnectors[i]] || ""));
     }
     const counter = document.querySelector("[gbs-slot-count]");
@@ -1036,6 +1054,7 @@ const fetchSlotNamesAndInit = () => {
             return;
         }
         initUIElements();
+        checkForUpdate();
         wifiGetStatus().then(() => {
             initUI();
             updateSlotNames();
@@ -1276,14 +1295,14 @@ const wifiGetStatus = () => {
             GBSControl.ui.wifiApButton.classList.add("gbs-button__secondary");
             GBSControl.ui.wifiStaButton.removeAttribute("active", "");
             GBSControl.ui.wifiStaButton.classList.remove("gbs-button__secondary");
-            GBSControl.ui.wifiStaSSID.innerHTML = "STA | Scan Network";
+            GBSControl.ui.wifiStaSSID.textContent = "STA | Scan Network";
         }
         else {
             GBSControl.ui.wifiApButton.removeAttribute("active", "");
             GBSControl.ui.wifiApButton.classList.remove("gbs-button__secondary");
             GBSControl.ui.wifiStaButton.setAttribute("active", "");
             GBSControl.ui.wifiStaButton.classList.add("gbs-button__secondary");
-            GBSControl.ui.wifiStaSSID.innerHTML = `${GBSControl.wifi.ssid}`;
+            GBSControl.ui.wifiStaSSID.textContent = `${GBSControl.wifi.ssid}`;
         }
     });
 };
@@ -1310,6 +1329,15 @@ const wifiConnect = () => {
             .catch(() => { });
     });
 };
+// Escapes text pulled from network-controlled data (e.g. a scanned WiFi
+// SSID) before it is interpolated into an HTML string, since that data can
+// contain markup and must not be inserted via innerHTML unescaped.
+const escapeHtml = (s) => String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 const wifiScanSSID = () => {
     GBSControl.ui.wifiStaButton.setAttribute("disabled", "");
     GBSControl.ui.wifiListTable.innerHTML = "";
@@ -1335,9 +1363,10 @@ const wifiScanSSID = () => {
     })
         .then((ssids) => {
         return ssids.reduce((acc, ssid) => {
-            return `${acc}<tr gbs-ssid="${ssid.ssid}">
+            const safeSsid = escapeHtml(ssid.ssid);
+            return `${acc}<tr gbs-ssid="${safeSsid}">
         <td class="gbs-icon" style="opacity:${parseInt(ssid.strength, 10) / 100}">wifi</td>
-        <td>${ssid.ssid}</td>
+        <td>${safeSsid}</td>
         <td class="gbs-icon">${ssid.encripted ? "lock" : "lock_open"}</td>
       </tr>`;
         }, "");
@@ -1482,6 +1511,49 @@ const initUnloadListener = () => {
         }
     });
 };
+// Checks the device's own reported version against the latest GitHub
+// release, and shows a small link in the header if a newer one exists.
+// Actually downloading/flashing a new firmware happens in the GBSC
+// Updater desktop app, not here - this is just a heads-up.
+const GITHUB_REPO = "maniaco007/Projeto-GBSC---BR-by-Maniaco";
+// Parses "v1.0.10" / "1.0.10" into [1, 0, 10] for a numeric comparison -
+// a plain string compare would put "1.0.10" before "1.0.9".
+const parseVersion = (v) => (v.match(/\d+/g) || ["0"]).map((n) => parseInt(n, 10));
+const isNewerVersion = (remote, local) => {
+    const r = parseVersion(remote);
+    const l = parseVersion(local);
+    for (let i = 0; i < Math.max(r.length, l.length); i++) {
+        const rv = r[i] || 0;
+        const lv = l[i] || 0;
+        if (rv !== lv) {
+            return rv > lv;
+        }
+    }
+    return false;
+};
+// Best-effort and silent: no internet, GitHub unreachable, API rate
+// limit, older firmware without /gbs/version - any of those just skip
+// the banner instead of interrupting normal use of the device.
+const checkForUpdate = () => {
+    const banner = GBSControl.ui.updateBanner;
+    if (!banner) {
+        return;
+    }
+    fetch(`/gbs/version?${+new Date()}`)
+        .then((r) => r.json())
+        .then((deviceInfo) => fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`)
+        .then((r) => r.json())
+        .then((release) => {
+        if (release.tag_name &&
+            release.html_url &&
+            isNewerVersion(release.tag_name, deviceInfo.version)) {
+            banner.textContent = `${t("Atualização disponível")}: ${release.tag_name}`;
+            banner.setAttribute("href", release.html_url);
+            banner.removeAttribute("hidden");
+        }
+    }))
+        .catch(() => { });
+};
 const initSlotButtons = () => {
     GBSControl.ui.slotContainer.innerHTML = getSlotsHTML();
     GBSControl.ui.slotButtonList = nodelistToArray(document.querySelectorAll('[gbs-role="slot"]'));
@@ -1494,6 +1566,7 @@ const initUIElements = () => {
         slotButtonList: nodelistToArray(document.querySelectorAll('[gbs-role="slot"]')),
         toggleList: document.querySelectorAll("[gbs-toggle]"),
         toggleSwichList: document.querySelectorAll("[gbs-toggle-switch]"),
+        updateBanner: document.querySelector("[gbs-update-banner]"),
         wifiList: document.querySelector("[gbs-wifi-list]"),
         wifiListTable: document.querySelector(".gbs-wifi__list"),
         wifiConnect: document.querySelector(".gsb-wifi__connect"),
@@ -1549,7 +1622,7 @@ const initGeneralListeners = () => {
     GBSControl.ui.promptOk.addEventListener("click", () => {
         GBSControl.ui.prompt.setAttribute("hidden", "");
         const value = GBSControl.ui.promptInput.value;
-        if (value !== undefined || value.length > 0) {
+        if (value !== undefined && value.length > 0) {
             gbsPromptPromise.resolve({ name: value, connector: selectedConnector });
         }
         else {
@@ -1564,7 +1637,7 @@ const initGeneralListeners = () => {
         if (event.keyCode === 13) {
             GBSControl.ui.prompt.setAttribute("hidden", "");
             const value = GBSControl.ui.promptInput.value;
-            if (value !== undefined || value.length > 0) {
+            if (value !== undefined && value.length > 0) {
                 gbsPromptPromise.resolve({ name: value, connector: selectedConnector });
             }
             else {
