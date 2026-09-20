@@ -1544,13 +1544,17 @@ const checkForUpdate = () => {
         .then((deviceInfo) => fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`)
         .then((r) => r.json())
         .then((release) => {
-        if (release.tag_name &&
+        const newer = release.tag_name &&
             release.html_url &&
-            isNewerVersion(release.tag_name, deviceInfo.version)) {
+            isNewerVersion(release.tag_name, deviceInfo.version);
+        if (newer) {
             banner.textContent = `${t("Atualização disponível")}: ${release.tag_name}`;
             banner.setAttribute("href", release.html_url);
             banner.removeAttribute("hidden");
         }
+        // Tell the device too, so it can show a small notice on the
+        // OLED status bar even when nobody's looking at the webui.
+        fetch(`/gbs/update-available?value=${newer ? 1 : 0}`).catch(() => { });
     }))
         .catch(() => { });
 };

@@ -10113,6 +10113,17 @@ void startWebserver()
         request->send(200, "application/json", "{\"version\":\"" FIRMWARE_VERSION "\"}");
     });
 
+    // The webui checks GitHub for a newer release (the device itself has
+    // no HTTPS client) and calls this to show a small "NOVO!" notice in
+    // the OLED status bar. RAM-only: resets on reboot, re-set next time
+    // someone opens the webui with an update still pending.
+    server.on("/gbs/update-available", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (request->hasParam("value")) {
+            oledMenu.updateAvailable = request->getParam("value")->value().toInt() != 0;
+        }
+        request->send(200, "application/json", oledMenu.updateAvailable ? "true" : "false");
+    });
+
     server.on("/gbs/heap", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(200, "application/json",
                       String("{\"free\":") + ESP.getFreeHeap() + ",\"maxBlock\":" + ESP.getMaxFreeBlockSize() + "}");

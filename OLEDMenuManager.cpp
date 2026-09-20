@@ -323,6 +323,9 @@ void OLEDMenuManager::drawStatusBar(bool negative)
         // main menu, draw some custom info
         this->display->drawXbm(0, 0, IMAGE_ITEM(OM_STATUS_CUSTOM));
     }
+    // Drawn between the back/custom icon (<=44px wide) and the page
+    // counter (right-aligned), so it fits without overlapping either.
+    drawUpdateIndicator(48, 0);
     static uint8_t totalItems = 0;
     uint8_t curIndex = 1;
     this->display->setTextAlignment(OLEDDISPLAY_TEXT_ALIGNMENT::TEXT_ALIGN_RIGHT);

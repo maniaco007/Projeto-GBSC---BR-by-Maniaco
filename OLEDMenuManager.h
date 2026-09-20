@@ -85,6 +85,21 @@ private:
         while (1);
     }
 
+    // Blinks so it's noticeable even at a glance, instead of a static icon
+    // that blends into the rest of the screen. Called from both the
+    // status bar and the screensaver so it's visible whichever the OLED
+    // happens to be showing.
+    void drawUpdateIndicator(int16_t x, int16_t y)
+    {
+        if (!updateAvailable) {
+            return;
+        }
+        if ((millis() / 500) % 2 == 0) {
+            display->setColor(OLEDDISPLAY_COLOR::WHITE);
+            display->drawXbm(x, y, IMAGE_ITEM(OM_UPDATE_ALERT));
+        }
+    }
+
     void drawScreenSaver()
     {
         display->clear();
@@ -94,12 +109,14 @@ private:
         // default bouncing text. Returning false means "nothing drawn,
         // use the default".
         if (screenSaverHandler && screenSaverHandler(display)) {
+            drawUpdateIndicator(OLED_MENU_WIDTH - OM_UPDATE_ALERT_WIDTH, 0);
             display->display();
             return;
         }
         constexpr int16_t max_x = OLED_MENU_WIDTH - OM_SCREEN_SAVER_WIDTH;
         constexpr int16_t max_y = OLED_MENU_HEIGHT - OM_SCREEN_SAVER_HEIGHT;
         display->drawXbm(rand() % max_x, rand() % max_y, IMAGE_ITEM(OM_SCREEN_SAVER));
+        drawUpdateIndicator(OLED_MENU_WIDTH - OM_UPDATE_ALERT_WIDTH, 0);
         display->display();
     }
 
@@ -109,6 +126,11 @@ public:
     // if it drew something (skips the default for this redraw).
     typedef bool (*ScreenSaverHandler)(OLEDDisplay *display);
     ScreenSaverHandler screenSaverHandler = nullptr;
+
+    // Set from the webui (see /gbs/update-available in gbs-control.ino)
+    // after it checks GitHub for a newer release. Shown as a small notice
+    // in the status bar so the OLED doesn't need its own internet access.
+    bool updateAvailable = false;
 
     OLEDMenuManager(SSD1306Wire *display);
     OLEDMenuItem *allocItem();

@@ -1,6 +1,16 @@
 #ifndef OLED_MENU_TRANSLATIONS_H_
 #define OLED_MENU_TRANSLATIONS_H_
 
+// Warning-triangle icon shown when a firmware update is available (set via
+// /gbs/update-available, see gbs-control.ino). Hand-drawn at native 16x16 -
+// small text like "!" alone was too easy to miss, this reads at a glance.
+#define OM_UPDATE_ALERT_WIDTH 16
+#define OM_UPDATE_ALERT_HEIGHT 16
+const unsigned char OM_UPDATE_ALERT [] PROGMEM = {
+0x0,0x0,0x0,0x1,0x80,0x1,0x80,0x3,0x40,0x2,0x40,0x6,0x60,0x6,0x60,0xe,
+0x70,0xe,0x70,0x1e,0xf8,0x1f,0x78,0x3e,0x7c,0x3e,0xfc,0x7f,0xfe,0x7f,0x0,0x0,
+};
+
 #define OM_STATUS_CUSTOM_WIDTH 30
 #define OM_STATUS_CUSTOM_HEIGHT 13
 const unsigned char OM_STATUS_CUSTOM [] PROGMEM = {
