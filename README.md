@@ -32,7 +32,14 @@
   <li><strong>Aviso de atualização disponível:</strong> a WebUI e o ícone piscando no visor OLED avisam quando há uma versão nova, comparando com os releases publicados aqui no GitHub.</li>
 </ul>
 <p><em>Veja a seção 12 do <a href="https://github.com/maniaco007/Projeto-GBSC---BR-by-Maniaco/blob/ptbr-import/docs/DESCRITIVO_DETALHADO.md">descritivo técnico</a> para os detalhes de como isso funciona por baixo dos panos.</em></p>
+✨ Novidades
+Checagem de atualização pelo GitHub
 
+A webui compara sua versão com o release mais recente deste repositório e mostra um aviso discreto quando há algo novo.
+O GBSC Updater ganhou um botão "Verificar atualização no GitHub": busca o .bin mais recente automaticamente, sem precisar baixar manualmente.
+Alerta de atualização no visor OLED
+
+Quando a webui encontra uma atualização, ela também avisa a GBS: um ícone de triângulo de alerta piscando aparece no menu e por cima do protetor de tela, pra você não deixar passar.
 <h2>🌍 Tradução e Redesign da Interface (WebUI)</h2>
 <p>Todo o ecossistema do firmware foi localizado e redesenhado, entregando uma experiência 100% nativa e agradável:</p>
 <ul>
