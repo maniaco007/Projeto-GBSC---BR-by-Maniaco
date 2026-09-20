@@ -22,6 +22,10 @@ PersWiFiManager::PersWiFiManager(AsyncWebServer &s, DNSServer &d)
     _server = &s;
     _dnsServer = &d;
     _apPass = "";
+    _connectNonBlock = false;
+    _connectStartTime = 0;
+    _wasConnected = false;
+    _lastReconnectAttempt = 0;
 } //PersWiFiManager
 
 bool PersWiFiManager::attemptConnection(const String &ssid, const String &pass)
@@ -51,11 +55,36 @@ bool PersWiFiManager::attemptConnection(const String &ssid, const String &pass)
 
 void PersWiFiManager::handleWiFi()
 {
-    if (!_connectStartTime)
+    if (!_connectStartTime) {
+        if (WiFi.status() == WL_CONNECTED) {
+            _wasConnected = true;
+            return;
+        }
+        // Not currently attempting a connection and not connected: either
+        // we're in STA mode and just dropped, or an earlier reconnect
+        // already timed out and fell back to AP mode. Previously there was
+        // no supervision here at all once the initial connect succeeded,
+        // so a mid-session STA drop (router reboot, RF glitch) was never
+        // retried and the device stayed offline - or stuck in AP mode -
+        // until a manual reboot. Retry periodically instead, but only when
+        // there's a stored network to go back to: attemptConnection()
+        // switches out of AP mode, so doing this unconditionally would
+        // repeatedly kick off anyone using an intentionally AP-only setup
+        // (no stored SSID) with no network to reconnect to anyway.
+        if (WiFi.SSID().length() > 0 && (_wasConnected || WiFi.getMode() == WIFI_AP)) {
+            unsigned long now = millis();
+            if (now - _lastReconnectAttempt >= WIFI_RECONNECT_RETRY_INTERVAL_MS) {
+                _lastReconnectAttempt = now;
+                _wasConnected = false;
+                attemptConnection();
+            }
+        }
         return;
+    }
 
     if (WiFi.status() == WL_CONNECTED) {
         _connectStartTime = 0;
+        _wasConnected = true;
         if (_connectHandler)
             _connectHandler();
         return;
@@ -102,6 +131,14 @@ void PersWiFiManager::setupWiFiHandlers()
     // note: removed DNS server setup here
 
     _server->on("/wifi/list", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (ESP.getFreeHeap() <= 10000) {
+            // Same low-heap guard used everywhere else in this app: this
+            // handler's stack array + ~2KB String buffer previously ran
+            // unconditionally, even in this async TCP-callback's reduced
+            // stack, regardless of how little heap remained.
+            request->send(200, "text/plain", "");
+            return;
+        }
         //scan for wifi networks
         int n = WiFi.scanComplete();
         String s = "";

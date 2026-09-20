@@ -55,7 +55,7 @@ private:
 
     void pushItem(OLEDMenuItem *item)
     {
-        if (itemSP == OLED_MENU_MAX_DEPTH - 1)
+        if (itemSP == OLED_MENU_MAX_DEPTH)
         {
             char msg[30];
             sprintf(msg, "Maximum depth reached: %d", OLED_MENU_MAX_DEPTH);

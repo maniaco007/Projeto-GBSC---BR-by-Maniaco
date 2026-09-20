@@ -364,7 +364,17 @@ uint8_t Si5351mcu::i2cWriteBurst( const uint8_t start_register,
     // All of the bytes queued up in the above write() calls are buffered
     // up and will be sent to the slave in one "burst", on the call to
     // endTransmission().  This also sends the I2C STOP to the Slave.
-    return Wire.endTransmission();
+    uint8_t error = Wire.endTransmission();
+    if (error) {
+        // Every caller previously discarded this, so a bus glitch left
+        // the clock generator silently mis-programmed with no diagnostic
+        // trail. This is the single choke point all writes go through.
+        Serial.print(F("si5351mcu: I2C write to reg "));
+        Serial.print(start_register);
+        Serial.print(F(" failed, error "));
+        Serial.println(error);
+    }
+    return error;
     // returns non zero on error
 }
 

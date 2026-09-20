@@ -104,7 +104,10 @@ private:
     }
     uint8_t iconToRegValue(uint8_t icon)
     {
-        return iconToRegValue((OSDIcon)(icon));
+        // Defensive: keep in range even if a future caller passes cursor
+        // math that isn't already wrapped mod 8 (today only next()/prev()
+        // set cursor, both already % 8).
+        return iconToRegValue((OSDIcon)(icon % 8));
     }
 
 public:
@@ -254,7 +257,7 @@ public:
         bool shouldEnter = (*handlers[cursor])(config);
         if (shouldEnter) {
             state = OSDState::SUB;
-            uint8_t active = 128.0 / config.barLength * config.barActiveLength;
+            uint8_t active = ((uint16_t)128 * config.barActiveLength) / config.barLength;
             GBS::OSD_MENU_MOD_SEL::write(iconToRegValue(cursor));
             GBS::OSD_BAR_LENGTH::write(128);
             GBS::OSD_BAR_FOREGROUND_VALUE::write(active);
@@ -271,7 +274,7 @@ public:
         config.onChange = true;
         (*handlers[cursor])(config);
         GBS::OSD_MENU_MOD_SEL::write(iconToRegValue(cursor));
-        uint8_t active = 128 / config.barLength * config.barActiveLength;
+        uint8_t active = ((uint16_t)128 * config.barActiveLength) / config.barLength;
         GBS::OSD_BAR_LENGTH::write(128);
         GBS::OSD_BAR_FOREGROUND_VALUE::write(active);
         GBS::OSD_COMMAND_FINISH::write(true);

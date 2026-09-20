@@ -16,6 +16,10 @@
 #include <DNSServer.h>
 
 #define WIFI_CONNECT_TIMEOUT 45
+// How often to retry the stored STA network in the background once we're
+// disconnected/in AP-mode-fallback, so a longer outage doesn't strand the
+// device until a manual reboot.
+#define WIFI_RECONNECT_RETRY_INTERVAL_MS 60000UL
 
 class PersWiFiManager
 {
@@ -52,6 +56,8 @@ private:
 
     bool _connectNonBlock;
     unsigned long _connectStartTime;
+    bool _wasConnected;
+    unsigned long _lastReconnectAttempt;
 
     WiFiChangeHandlerFunction _connectHandler;
     WiFiChangeHandlerFunction _apHandler;

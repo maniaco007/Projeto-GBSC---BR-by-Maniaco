@@ -54,6 +54,11 @@ OLEDMenuItem *OLEDMenuManager::registerItem(
     newItem->handler = handler;
     newItem->alignment = alignment;
     if (parent) {
+        if (parent->numSubItem == OLED_MENU_MAX_SUBITEMS_NUM) {
+            char msg[50];
+            sprintf(msg, "Maximum number of sub items reached: %d", OLED_MENU_MAX_SUBITEMS_NUM);
+            panicAndDisable(msg);
+        }
         parent->addSubItem(newItem);
         if (parent == rootItem) {
             cursor = 0;

@@ -128,9 +128,9 @@ private:
                 break;
             case GBS::OSD_ICON_VERTICAL_SIZE:
                 if (delta < 0)
-                    scaleVertical(-delta, false);
+                    scaleVertical(-delta, true);
                 else
-                    scaleVertical(delta, true);
+                    scaleVertical(delta, false);
                 break;
         }
     }

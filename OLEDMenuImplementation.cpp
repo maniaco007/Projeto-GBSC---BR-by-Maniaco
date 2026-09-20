@@ -154,7 +154,6 @@ bool presetsCreationMenuHandler(OLEDMenuManager *manager, OLEDMenuItem *item, OL
     SlotMetaArray slotsObject;
     File slotsBinaryFileRead = LittleFS.open(SLOTS_FILE, "r");
     manager->clearSubItems(item);
-    int curNumSlot = 0;
     if (slotsBinaryFileRead) {
         slotsBinaryFileRead.read((byte *)&slotsObject, sizeof(slotsObject));
         slotsBinaryFileRead.close();
@@ -175,17 +174,19 @@ bool presetsCreationMenuHandler(OLEDMenuManager *manager, OLEDMenuItem *item, OL
             return strcasecmp(slotA->name, slotB->name);
         });
 
-        for (int i = 0; i < numNamed; ++i) {
-            curNumSlot++;
-            if (curNumSlot > OLED_MENU_MAX_SUBITEMS_NUM) {
-                break;
-            }
+        // Never try to register more than OLED_MENU_MAX_SUBITEMS_NUM items
+        // total: registerItem() enforces that limit by halting the device,
+        // it does not truncate. When everything doesn't fit, reserve the
+        // last slot for the "too many presets" indicator instead of
+        // registering a 17th (or later) item on top of a full menu.
+        bool tooMany = numNamed > OLED_MENU_MAX_SUBITEMS_NUM;
+        int limit = tooMany ? (OLED_MENU_MAX_SUBITEMS_NUM - 1) : numNamed;
+        for (int i = 0; i < limit; ++i) {
             manager->registerItem(item, named[i]->slot, named[i]->name, presetSelectionMenuHandler, nullptr, TEXT_ALIGN_LEFT);
         }
-    }
-
-    if (curNumSlot > OLED_MENU_MAX_SUBITEMS_NUM) {
-        manager->registerItem(item, 0, IMAGE_ITEM(TEXT_TOO_MANY_PRESETS));
+        if (tooMany) {
+            manager->registerItem(item, 0, IMAGE_ITEM(TEXT_TOO_MANY_PRESETS));
+        }
     }
 
     if (!item->numSubItem) {
@@ -544,14 +545,14 @@ bool wifiMenuHandler(OLEDMenuManager *manager, OLEDMenuItem *item, OLEDMenuNav, 
     WiFiMode_t wifiMode = WiFi.getMode();
     manager->clearSubItems(item);
     if (wifiMode == WIFI_STA) {
-        sprintf(ssid, "SSID: %s", WiFi.SSID().c_str());
+        snprintf(ssid, sizeof(ssid), "SSID: %s", WiFi.SSID().c_str());
         manager->registerItem(item, 0, ssid);
         if (WiFi.isConnected()) {
             manager->registerItem(item, 0, IMAGE_ITEM(TEXT_WIFI_CONNECTED));
             manager->registerItem(item, 0, IMAGE_ITEM(TEXT_WIFI_URL));
-            sprintf(ip, "http://%s", WiFi.localIP().toString().c_str());
+            snprintf(ip, sizeof(ip), "http://%s", WiFi.localIP().toString().c_str());
             manager->registerItem(item, 0, ip);
-            sprintf(domain, "http://%s", device_hostname_full);
+            snprintf(domain, sizeof(domain), "http://%s", device_hostname_full);
             manager->registerItem(item, 0, domain);
         } else {
             // shouldn't happen?
@@ -559,11 +560,11 @@ bool wifiMenuHandler(OLEDMenuManager *manager, OLEDMenuItem *item, OLEDMenuNav, 
         }
     } else if (wifiMode == WIFI_AP) {
         manager->registerItem(item, 0, IMAGE_ITEM(TEXT_WIFI_CONNECT_TO));
-        sprintf(ssid, "SSID: %s (%s)", ap_ssid, ap_password);
+        snprintf(ssid, sizeof(ssid), "SSID: %s (%s)", ap_ssid, ap_password);
         manager->registerItem(item, 0, ssid);
         manager->registerItem(item, 0, IMAGE_ITEM(TEXT_WIFI_URL));
         manager->registerItem(item, 0, "http://192.168.4.1");
-        sprintf(domain, "http://%s", device_hostname_full);
+        snprintf(domain, sizeof(domain), "http://%s", device_hostname_full);
         manager->registerItem(item, 0, domain);
     } else {
         // shouldn't happen?

@@ -17,6 +17,7 @@ import glob
 import hashlib
 import os
 import queue
+import re
 import socket
 import sys
 import threading
@@ -40,8 +41,27 @@ def resource_dir():
     return os.path.dirname(os.path.abspath(__file__))
 
 
+_FIRMWARE_VERSION_RE = re.compile(r"[vV](\d+)\.(\d+)\.(\d+)")
+
+
+def _firmware_sort_key(path):
+    """Chave de ordenacao ciente de versao: extrai X.Y.Z do nome do arquivo
+    (ex.: GBSC-PTBR-v1.0.10.bin) e ordena pela tupla numerica, para que
+    v1.0.10 nao fique "menor" que v1.0.9 como aconteceria numa ordenacao
+    puramente lexicografica. Nomes que nao batem com o padrao ficam sempre
+    antes dos que batem (nunca viram "o mais novo" por engano) e, entre si,
+    mantem o antigo desempate lexicografico."""
+    match = _FIRMWARE_VERSION_RE.search(os.path.basename(path))
+    if match:
+        return (1, tuple(int(part) for part in match.groups()), path)
+    return (0, (), path)
+
+
 def bundled_firmware():
-    files = sorted(glob.glob(os.path.join(resource_dir(), "firmware", "*.bin")))
+    files = sorted(
+        glob.glob(os.path.join(resource_dir(), "firmware", "*.bin")),
+        key=_firmware_sort_key,
+    )
     return files[-1] if files else ""
 
 
@@ -82,88 +102,92 @@ def ota_upload(ip, path, log, progress, cancel=None):
     log("ATENCAO: se o Windows abrir um aviso do Firewall, clique em 'Permitir acesso'.")
     conn = None
     server = None
-    for attempt in range(1, 4):
-        if cancel and cancel.is_set():
-            raise UpdateError("Cancelado.")
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind(("", 0))
-        server.listen(1)
-        host_port = server.getsockname()[1]
-        invite = ("0 %d %d %s\n" % (host_port, size, md5)).encode()
-        log("Convidando a GBS para receber o firmware (tentativa %d de 3) ..." % attempt)
-        accepted = False
-        udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udp.settimeout(1.5)
-        for _ in range(8):
+    try:
+        for attempt in range(1, 4):
             if cancel and cancel.is_set():
                 raise UpdateError("Cancelado.")
-            udp.sendto(invite, (ip, OTA_PORT))
-            try:
-                answer = udp.recv(64).decode(errors="ignore")
-            except socket.timeout:
+            server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server.bind(("", 0))
+            server.listen(1)
+            host_port = server.getsockname()[1]
+            invite = ("0 %d %d %s\n" % (host_port, size, md5)).encode()
+            log("Convidando a GBS para receber o firmware (tentativa %d de 3) ..." % attempt)
+            accepted = False
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp:
+                udp.settimeout(1.5)
+                for _ in range(8):
+                    if cancel and cancel.is_set():
+                        raise UpdateError("Cancelado.")
+                    udp.sendto(invite, (ip, OTA_PORT))
+                    try:
+                        answer = udp.recv(64).decode(errors="ignore")
+                    except socket.timeout:
+                        continue
+                    if answer.startswith("OK"):
+                        accepted = True
+                        break
+                    if answer.startswith("AUTH"):
+                        raise UpdateError("Essa GBS pede senha de OTA, o que este programa nao suporta.")
+            if not accepted:
+                server.close()
                 continue
-            if answer.startswith("OK"):
-                accepted = True
-                break
-            if answer.startswith("AUTH"):
-                raise UpdateError("Essa GBS pede senha de OTA, o que este programa nao suporta.")
-        udp.close()
-        if not accepted:
-            server.close()
-            continue
-        server.settimeout(25)
-        try:
-            conn, _addr = server.accept()
-            break
-        except socket.timeout:
-            log("A GBS nao conseguiu se conectar de volta (Firewall?). Tentando de novo ...")
-            server.close()
-            continue
-    if conn is None:
-        raise UpdateError(
-            "Nao consegui completar a conexao com a GBS.\n"
-            "1) Confira o IP e se a GBS esta na mesma rede Wi-Fi.\n"
-            "2) Se o Firewall do Windows perguntou algo, clique em 'Permitir acesso' "
-            "(rede privada) e tente de novo.\n"
-            "3) Se persistir, desligue e ligue a GBS."
-        )
-
-    log("Enviando o firmware (nao desligue a GBS) ...")
-    sent = 0
-    response = ""
-    with open(path, "rb") as f:
-        while True:
-            if cancel and cancel.is_set():
-                conn.close()
-                raise UpdateError("Cancelado. A GBS continua com o firmware anterior.")
-            chunk = f.read(CHUNK)
-            if not chunk:
-                break
-            conn.settimeout(15)
-            conn.sendall(chunk)
-            sent += len(chunk)
-            progress(sent / float(size))
+            server.settimeout(25)
             try:
-                response += conn.recv(16).decode(errors="ignore")
-            except socket.timeout:
-                raise UpdateError("A GBS parou de responder durante o envio.")
-
-    log("Envio concluido. Aguardando a GBS confirmar ...")
-    conn.settimeout(15)
-    try:
-        while "OK" not in response:
-            data = conn.recv(32).decode(errors="ignore")
-            if not data:
+                conn, _addr = server.accept()
                 break
-            response += data
-    except socket.timeout:
-        pass
-    conn.close()
-    server.close()
-    if "OK" not in response:
-        raise UpdateError("A GBS nao confirmou a gravacao. Espere ela reiniciar e confira se atualizou.")
-    progress(1.0)
-    log("Pronto! A GBS vai reiniciar sozinha em instantes.")
+            except socket.timeout:
+                log("A GBS nao conseguiu se conectar de volta (Firewall?). Tentando de novo ...")
+                server.close()
+                continue
+        if conn is None:
+            raise UpdateError(
+                "Nao consegui completar a conexao com a GBS.\n"
+                "1) Confira o IP e se a GBS esta na mesma rede Wi-Fi.\n"
+                "2) Se o Firewall do Windows perguntou algo, clique em 'Permitir acesso' "
+                "(rede privada) e tente de novo.\n"
+                "3) Se persistir, desligue e ligue a GBS."
+            )
+
+        log("Enviando o firmware (nao desligue a GBS) ...")
+        sent = 0
+        response = ""
+        with open(path, "rb") as f:
+            while True:
+                if cancel and cancel.is_set():
+                    raise UpdateError("Cancelado. A GBS continua com o firmware anterior.")
+                chunk = f.read(CHUNK)
+                if not chunk:
+                    break
+                conn.settimeout(15)
+                conn.sendall(chunk)
+                sent += len(chunk)
+                progress(sent / float(size))
+                try:
+                    response += conn.recv(16).decode(errors="ignore")
+                except socket.timeout:
+                    raise UpdateError("A GBS parou de responder durante o envio.")
+
+        log("Envio concluido. Aguardando a GBS confirmar ...")
+        conn.settimeout(15)
+        try:
+            while "OK" not in response:
+                data = conn.recv(32).decode(errors="ignore")
+                if not data:
+                    break
+                response += data
+        except socket.timeout:
+            pass
+        if "OK" not in response:
+            raise UpdateError("A GBS nao confirmou a gravacao. Espere ela reiniciar e confira se atualizou.")
+        progress(1.0)
+        log("Pronto! A GBS vai reiniciar sozinha em instantes.")
+    finally:
+        # Garante que os sockets nunca vazem, mesmo se uma excecao nao prevista
+        # (OSError, ConnectionResetError, etc.) sair de qualquer ponto acima.
+        if conn is not None:
+            conn.close()
+        if server is not None:
+            server.close()
 
 
 def list_serial_ports():
@@ -205,7 +229,7 @@ def usb_flash(port, path, erase, log):
         if erase:
             log("Apagando a memoria da GBS (isso apaga presets e Wi-Fi salvos) ...")
             esptool.main(base + ["erase-flash"])
-        log("Gravando o firmware pelo cabo USB ...")
+        log("Gravando o firmware pelo cabo USB (NAO desconecte a GBS ate terminar) ...")
         esptool.main(base + ["write-flash", "0x0", path])
     except SystemExit as exc:
         if exc.code not in (0, None):
@@ -365,7 +389,11 @@ def run_gui():
         cancel.clear()
         progress["value"] = 0
         send_btn.configure(state="disabled")
-        cancel_btn.configure(state="normal")
+        # Cancelar so tem efeito de verdade no envio por Wi-Fi: a gravacao por
+        # USB (esptool) e uma chamada bloqueante que, uma vez iniciada, nao da
+        # pra interromper com seguranca. Por isso o botao fica desabilitado
+        # nessa aba, em vez de dar a falsa impressao de que cancelar funciona.
+        cancel_btn.configure(state="disabled" if use_usb else "normal")
 
         def log(msg):
             messages.put(("log", msg))

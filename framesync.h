@@ -176,7 +176,7 @@ private:
         if (periodOutput)
             *periodOutput = outPeriod;
         if (phase)
-            *phase = (diff < inPeriod) ? diff : diff - inPeriod;
+            *phase = diff; // diff is already in [0, inPeriod) from the modulo above
 
         return true;
     }
@@ -267,11 +267,11 @@ public:
             }
 
             while ((GBS::STATUS_VDS_FIELD::read() == 1) && (++timeout < 400))
-                ;
+                yield();
             GBS::VDS_VS_ST::write(vsst);
             timeout = 0;
             while ((GBS::STATUS_VDS_FIELD::read() == 0) && (++timeout < 400))
-                ;
+                yield();
             GBS::VDS_VSYNC_RST::write(vtotal);
         }
 #ifdef FS_DEBUG
@@ -365,34 +365,11 @@ public:
     }
 
     // Sample vsync start and stop times from debug pin.
+    // Identical to vsyncOutputSample(): only the debug-bus selector the
+    // caller set up beforehand differs between "input" and "output" use.
     static bool vsyncInputSample(uint32_t *start, uint32_t *stop)
     {
-        yield();
-        ESP.wdtDisable();
-        MeasurePeriod::start();
-
-        // typical: 300000 at 80MHz, 600000 at 160MHz
-        for (uint32_t i = 0; i < 3000000; i++) {
-            if (MeasurePeriod::armed) {
-                MeasurePeriod::armed = 0;
-                delay(7);
-                WiFi.setSleepMode(WIFI_LIGHT_SLEEP);
-            }
-            if (MeasurePeriod::stopTime > 0) {
-                break;
-            }
-        }
-        *start = MeasurePeriod::startTime;
-        *stop = MeasurePeriod::stopTime;
-        ESP.wdtEnable(0);
-        WiFi.setSleepMode(WIFI_NONE_SLEEP);
-
-        if ((*start >= *stop) || *stop == 0 || *start == 0) {
-            // ESP.getCycleCount() overflow oder no pulse, just fail this round
-            return false;
-        }
-
-        return true;
+        return vsyncOutputSample(start, stop);
     }
 
     // Perform vsync phase locking.  This is accomplished by measuring
@@ -456,11 +433,11 @@ public:
         // else it is method 1: leaves VS position alone
 
         while ((GBS::STATUS_VDS_FIELD::read() == 1) && (++timeout < 400))
-            ;
+            yield();
         GBS::VDS_VS_ST::write(vsst);
         timeout = 0;
         while ((GBS::STATUS_VDS_FIELD::read() == 0) && (++timeout < 400))
-            ;
+            yield();
         GBS::VDS_VSYNC_RST::write(vtotal);
 
         syncLastCorrection = correction;

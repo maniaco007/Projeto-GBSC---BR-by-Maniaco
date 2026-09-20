@@ -44,7 +44,15 @@ def main():
     ap.add_argument("--invert", action="store_true", help="Inverte preto/branco (use se o logo aparecer com as cores trocadas no OLED)")
     args = ap.parse_args()
 
-    src = Image.open(args.image).convert("L")
+    src = Image.open(args.image).convert("RGBA")
+    # Composita sobre um fundo branco opaco antes de converter para tons de
+    # cinza (mesma ideia de prepare_frame_gray em scripts/make_icon_animation.py):
+    # sem isso, um PNG com fundo transparente cujo RGB por baixo for preto
+    # (padrão comum de exportação) vira cinza 0 e o logo sai como uma caixa
+    # sólida acesa no OLED em vez de silhueta transparente/apagada.
+    background = Image.new("RGBA", src.size, (255, 255, 255, 255))
+    background.alpha_composite(src)
+    src = background.convert("L")
 
     # redimensiona mantendo proporção dentro de width x height
     ratio = min(args.width / src.width, args.height / src.height)

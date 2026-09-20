@@ -172,7 +172,7 @@ fonts_map = {}
 default_font = None
 
 
-def convert(text, font):
+def convert(text, font, tag, debug_preview=False):
     img = Image.new('L', (0, 0), color=0)
     draw = ImageDraw.Draw(img)
     _, _, width, height = draw.textbbox((0, 0), text, font)
@@ -200,7 +200,8 @@ def convert(text, font):
             bytes_arr.append(number)
             number = 0
             byte_index = 0
-    img.save(f'i18n_preview_{tag}.jpg')
+    if debug_preview:
+        img.save(f'i18n_preview_{tag}.jpg')
     return width, height, bytes_arr
 
 
@@ -236,6 +237,9 @@ if __name__ == '__main__':
     parser.add_argument('lang', help='Language code', nargs='?')
     parser.add_argument('--fonts', '-f', nargs='*', default=[])
     parser.add_argument('--output', '-o', default='OLEDMenuTranslations.h')
+    parser.add_argument('--debug-preview', action='store_true',
+                         help='Salva um JPEG de depuracao por string traduzida '
+                              '(i18n_preview_<tag>.jpg). Desligado por padrao.')
     args = parser.parse_args()
     for font in args.fonts:
         tokens = font.split('@')
@@ -273,7 +277,7 @@ if __name__ == '__main__':
                 size = DEFAULT_FONT_SIZE
             font = fonts_map.get(size, default_font)
             font = ImageFont.truetype(font, size=size)
-            width, height, byte_array = convert(text, font)
+            width, height, byte_array = convert(text, font, tag, args.debug_preview)
             tmp_str = ""
             i = 0
             while i < len(byte_array):

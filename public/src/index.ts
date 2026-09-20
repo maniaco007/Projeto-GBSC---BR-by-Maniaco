@@ -243,6 +243,7 @@ const createWebSocket = () => {
     GBSControl.wsTimeout = setTimeout(timeOutWs, 4000);
     GBSControl.isWsActive = true;
 
+    try {
     const [
       messageDataAt0,
       messageDataAt1,
@@ -367,6 +368,10 @@ const createWebSocket = () => {
         });
       }
     }
+    } catch (e) {
+      console.warn("Malformed websocket message", e);
+      return;
+    }
   };
 };
 
@@ -452,17 +457,21 @@ const savePreset = () => {
                 0,
                 24
               )}&icon=${iconId}&conn=${connector}&${+new Date()}`
-            ).then(() => {
-              loadUser("4").then(() => {
-                setTimeout(() => {
-                  fetchSlotNames().then((success: boolean) => {
-                    if (success) {
-                      updateSlotNames();
-                    }
-                  });
-                }, 500);
+            )
+              .then(() => {
+                loadUser("4").then(() => {
+                  setTimeout(() => {
+                    fetchSlotNames().then((success: boolean) => {
+                      if (success) {
+                        updateSlotNames();
+                      }
+                    });
+                  }, 500);
+                });
+              })
+              .catch(() => {
+                gbsAlert(t("Erro ao salvar o preset")).catch(() => {});
               });
-            });
           });
       }
     })
@@ -859,6 +868,7 @@ const I18N_EN: { [pt: string]: string } = {
   "Nome do slot": "Slot name",
   "Falha ao apagar o preset": "Failed to delete the preset",
   "Erro ao apagar o preset": "Error deleting the preset",
+  "Erro ao salvar o preset": "Error saving the preset",
   "Arquivo de cópia inválido": "Invalid backup file",
   "Reiniciando o GBSControl.\nAguarde o wifi reconectar e clique OK": "Restarting GBSControl.\nWait for wifi to reconnect and click OK",
   "Trocando para o modo Ponto de Acesso. Conecte-se ao SSID gbscontrol e clique OK": "Switching to Access Point mode. Connect to the gbscontrol SSID and click OK",
@@ -1029,23 +1039,28 @@ const sortSlotButtonsAlphabetically = () => {
     }
     return nameA.localeCompare(nameB, "pt-BR", { sensitivity: "base" });
   });
-  buttons.forEach((button) => container.appendChild(button));
+  const fragment = document.createDocumentFragment();
+  buttons.forEach((button) => fragment.appendChild(button));
+  container.appendChild(fragment);
 };
 
 const updateSlotNames = () => {
   let savedCount = 0;
   for (let i = 0; i < GBSControl.maxSlots; i++) {
+    const slotName = (GBSControl.structs.slots[i].name || "").trim();
+    if (slotName && slotName !== "Empty") {
+      savedCount++;
+    }
     const el = document.querySelector(`[gbs-slot-id="${i}"]`);
+    if (!el) {
+      continue;
+    }
 
     el.setAttribute("gbs-name", GBSControl.structs.slots[i].name);
     const iconId = GBSControl.slotIcons[i] || 0;
     nodelistToArray<Element>(el.querySelectorAll("[gbs-icon-use]")).forEach((use) => {
       use.setAttribute("href", `#gbs-slot-icon-${iconId}`);
     });
-    const slotName = (GBSControl.structs.slots[i].name || "").trim();
-    if (slotName && slotName !== "Empty") {
-      savedCount++;
-    }
     el.setAttribute("gbs-conn", t(CONNECTOR_LABELS[GBSControl.slotConnectors[i]] || ""));
   }
   const counter = document.querySelector("[gbs-slot-count]");
@@ -1509,13 +1524,13 @@ const wifiGetStatus = () => {
         GBSControl.ui.wifiApButton.classList.add("gbs-button__secondary");
         GBSControl.ui.wifiStaButton.removeAttribute("active", "");
         GBSControl.ui.wifiStaButton.classList.remove("gbs-button__secondary");
-        GBSControl.ui.wifiStaSSID.innerHTML = "STA | Scan Network";
+        GBSControl.ui.wifiStaSSID.textContent = "STA | Scan Network";
       } else {
         GBSControl.ui.wifiApButton.removeAttribute("active", "");
         GBSControl.ui.wifiApButton.classList.remove("gbs-button__secondary");
         GBSControl.ui.wifiStaButton.setAttribute("active", "");
         GBSControl.ui.wifiStaButton.classList.add("gbs-button__secondary");
-        GBSControl.ui.wifiStaSSID.innerHTML = `${GBSControl.wifi.ssid}`;
+        GBSControl.ui.wifiStaSSID.textContent = `${GBSControl.wifi.ssid}`;
       }
     });
 };
@@ -1549,6 +1564,17 @@ const wifiConnect = () => {
   });
 };
 
+// Escapes text pulled from network-controlled data (e.g. a scanned WiFi
+// SSID) before it is interpolated into an HTML string, since that data can
+// contain markup and must not be inserted via innerHTML unescaped.
+const escapeHtml = (s: string): string =>
+  String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 const wifiScanSSID = () => {
   GBSControl.ui.wifiStaButton.setAttribute("disabled", "");
   GBSControl.ui.wifiListTable.innerHTML = "";
@@ -1576,11 +1602,12 @@ const wifiScanSSID = () => {
     })
     .then((ssids) => {
       return ssids.reduce((acc, ssid) => {
-        return `${acc}<tr gbs-ssid="${ssid.ssid}">
+        const safeSsid = escapeHtml(ssid.ssid);
+        return `${acc}<tr gbs-ssid="${safeSsid}">
         <td class="gbs-icon" style="opacity:${
           parseInt(ssid.strength, 10) / 100
         }">wifi</td>
-        <td>${ssid.ssid}</td>
+        <td>${safeSsid}</td>
         <td class="gbs-icon">${ssid.encripted ? "lock" : "lock_open"}</td>
       </tr>`;
       }, "");
@@ -1862,7 +1889,7 @@ const initGeneralListeners = () => {
   GBSControl.ui.promptOk.addEventListener("click", () => {
     GBSControl.ui.prompt.setAttribute("hidden", "");
     const value = GBSControl.ui.promptInput.value;
-    if (value !== undefined || value.length > 0) {
+    if (value !== undefined && value.length > 0) {
       gbsPromptPromise.resolve({ name: value, connector: selectedConnector });
     } else {
       gbsPromptPromise.reject();
@@ -1878,7 +1905,7 @@ const initGeneralListeners = () => {
     if (event.keyCode === 13) {
       GBSControl.ui.prompt.setAttribute("hidden", "");
       const value = GBSControl.ui.promptInput.value;
-      if (value !== undefined || value.length > 0) {
+      if (value !== undefined && value.length > 0) {
         gbsPromptPromise.resolve({ name: value, connector: selectedConnector });
       } else {
         gbsPromptPromise.reject();
