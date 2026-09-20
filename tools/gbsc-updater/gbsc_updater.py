@@ -13,6 +13,7 @@ Modo texto (sem janela), util para testes:
 """
 
 import argparse
+import datetime
 import glob
 import hashlib
 import json
@@ -20,10 +21,15 @@ import os
 import queue
 import re
 import socket
+import struct
 import sys
 import tempfile
 import threading
+import time
+import urllib.error
+import urllib.parse
 import urllib.request
+import uuid
 
 APP_NAME = "GBSC Updater"
 APP_VERSION = "1.0"
@@ -32,6 +38,9 @@ CHUNK = 1460
 MIN_FW = 200 * 1024
 MAX_FW = 1044464  # tamanho maximo de programa da D1 mini (layout 4m1m)
 GITHUB_REPO = "maniaco007/Projeto-GBSC---BR-by-Maniaco"
+BACKUP_INFO_FILE = "info.json"
+BACKUP_DATA_FILE = "data.bin"
+BACKUP_FIRMWARE_FILE = "firmware.bin"
 
 
 class UpdateError(Exception):
@@ -42,6 +51,40 @@ def resource_dir():
     if getattr(sys, "frozen", False):
         return getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
     return os.path.dirname(os.path.abspath(__file__))
+
+
+def app_dir():
+    """Onde o proprio executavel (ou script) mora - diferente de
+    resource_dir(): num .exe onefile, resource_dir() aponta pra uma pasta
+    temporaria (_MEIPASS) que e apagada quando o programa fecha, entao
+    coisas que precisam sobreviver entre execucoes (backups) nao podem
+    ir la."""
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+def backups_dir():
+    d = os.path.join(app_dir(), "backups")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def list_backups():
+    """Lista os backups salvos (mais recente primeiro), cada um como
+    (pasta, info_dict)."""
+    result = []
+    for name in sorted(os.listdir(backups_dir()), reverse=True):
+        folder = os.path.join(backups_dir(), name)
+        info_path = os.path.join(folder, BACKUP_INFO_FILE)
+        if os.path.isfile(info_path):
+            try:
+                with open(info_path, "r", encoding="utf-8") as f:
+                    info = json.load(f)
+            except Exception:  # noqa: BLE001
+                continue
+            result.append((folder, info))
+    return result
 
 
 _FIRMWARE_VERSION_RE = re.compile(r"[vV](\d+)\.(\d+)\.(\d+)")
@@ -115,6 +158,213 @@ def fetch_device_version(ip):
             return json.load(resp).get("version", "")
     except Exception:  # noqa: BLE001
         return ""
+
+
+def fetch_release_by_tag(tag):
+    """Como fetch_latest_release_info(), mas pra uma tag especifica (ex.:
+    'v1.0.2'). Retorna (url_do_bin, nome_do_arquivo) ou None se essa tag
+    nao existir no GitHub ou nao tiver um .bin anexado - usado pra tentar
+    guardar o firmware antigo junto do backup, e e opcional: se nao
+    achar, o backup dos dados ainda acontece normalmente."""
+    url = "https://api.github.com/repos/%s/releases/tags/%s" % (GITHUB_REPO, tag)
+    req = urllib.request.Request(
+        url, headers={"Accept": "application/vnd.github+json", "User-Agent": APP_NAME}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.load(resp)
+    except Exception:  # noqa: BLE001
+        return None
+    asset = next(
+        (a for a in data.get("assets", []) if a.get("name", "").lower().endswith(".bin")),
+        None,
+    )
+    if not asset:
+        return None
+    return asset["browser_download_url"], asset["name"]
+
+
+def _wait_online(ip, log, timeout=60):
+    """Espera a GBS voltar a responder por HTTP depois de um reboot (pos
+    gravacao). Nao levanta erro se o tempo esgotar - quem chama decide o
+    que fazer (normalmente so avisar e seguir, ja que o reboot pode
+    demorar mais numa rede lenta)."""
+    log("Aguardando a GBS voltar (nao desligue) ...")
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            urllib.request.urlopen("http://%s/gbs/heap" % ip, timeout=3).read()
+            log("GBS respondendo de novo.")
+            return True
+        except Exception:  # noqa: BLE001
+            time.sleep(2)
+    log("A GBS ainda nao respondeu apos %ds - pode estar demorando mais que o normal." % timeout)
+    return False
+
+
+def _multipart_upload(ip, filename, data, timeout=15):
+    """POST bruto pro /spiffs/upload da GBS (mesmo endpoint que a webui
+    usa pra restaurar arquivos), sem depender de nenhuma biblioteca alem
+    da padrao do Python."""
+    boundary = uuid.uuid4().hex
+    body = (
+        ('--%s\r\n' % boundary).encode()
+        + ('Content-Disposition: form-data; name="file"; filename="%s"\r\n' % filename).encode()
+        + b"Content-Type: application/octet-stream\r\n\r\n"
+        + data
+        + ("\r\n--%s--\r\n" % boundary).encode()
+    )
+    req = urllib.request.Request(
+        "http://%s/spiffs/upload" % ip,
+        data=body,
+        headers={
+            "Content-Type": "multipart/form-data; boundary=%s" % boundary,
+            "Content-Length": str(len(body)),
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        resp.read()
+
+
+def backup_device(ip, dest_path, log, progress, cancel=None):
+    """Baixa TODOS os arquivos do LittleFS da GBS e empacota num unico
+    arquivo, no MESMO formato que a webui ja usa (Sistema > Copia >
+    Baixar) - 4 bytes de tamanho (big-endian) + um JSON {caminho:
+    tamanho} + o conteudo bruto de cada arquivo em seguida, na mesma
+    ordem. Compativel com a tela de restauracao que ja existe na webui,
+    e o formato que restore_device() espera."""
+    try:
+        with urllib.request.urlopen("http://%s/spiffs/dir" % ip, timeout=10) as resp:
+            files = json.load(resp)
+    except Exception as exc:  # noqa: BLE001
+        raise UpdateError("Nao consegui listar os arquivos da GBS para o backup (%s)." % exc)
+
+    total = len(files) or 1
+    contents = []
+    for i, path in enumerate(files):
+        if cancel and cancel.is_set():
+            raise UpdateError("Cancelado.")
+        url = "http://%s/spiffs/download?file=%s" % (ip, urllib.parse.quote(path))
+        try:
+            with urllib.request.urlopen(url, timeout=15) as resp:
+                contents.append(resp.read())
+        except Exception as exc:  # noqa: BLE001
+            raise UpdateError("Falha ao baixar '%s' da GBS durante o backup (%s)." % (path, exc))
+        progress((i + 1) / float(total))
+
+    header_obj = {path: len(data) for path, data in zip(files, contents)}
+    header_json = json.dumps(header_obj).encode("ascii")
+    with open(dest_path, "wb") as f:
+        f.write(struct.pack(">I", len(header_json)))
+        f.write(header_json)
+        for data in contents:
+            f.write(data)
+    log("Backup dos dados da GBS salvo (%d arquivos)." % len(files))
+
+
+def restore_device(ip, backup_path, log, progress, cancel=None):
+    """Le um arquivo no formato de backup_device()/da webui e reenvia
+    cada arquivo pra GBS via /spiffs/upload."""
+    with open(backup_path, "rb") as f:
+        raw = f.read()
+    if len(raw) < 6 or raw[4:6] != b'{"':
+        raise UpdateError("Arquivo de backup invalido ou corrompido.")
+    header_size = struct.unpack(">I", raw[0:4])[0]
+    try:
+        header_obj = json.loads(raw[4:4 + header_size].decode("ascii"))
+    except Exception:  # noqa: BLE001
+        raise UpdateError("Arquivo de backup invalido ou corrompido.")
+
+    offset = 4 + header_size
+    total = len(header_obj) or 1
+    for i, (path, size) in enumerate(header_obj.items()):
+        if cancel and cancel.is_set():
+            raise UpdateError("Cancelado.")
+        data = raw[offset:offset + size]
+        offset += size
+        try:
+            _multipart_upload(ip, path.lstrip("/"), data)
+        except Exception as exc:  # noqa: BLE001
+            raise UpdateError("Falha ao restaurar '%s' na GBS (%s)." % (path, exc))
+        progress((i + 1) / float(total))
+    log("Dados restaurados na GBS (%d arquivos)." % len(header_obj))
+
+
+def save_backup_snapshot(ip, log, progress, cancel=None):
+    """Snapshot completo antes de atualizar: dados da GBS + (se achar no
+    GitHub) o firmware que ela esta rodando agora, numa pasta com data e
+    versao, pronta pra restaurar depois com restore_backup(). Levanta
+    UpdateError se o backup dos dados falhar - a atualizacao nao deve
+    prosseguir sem isso."""
+    version = fetch_device_version(ip)
+    stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    folder_name = "%s_v%s" % (stamp, version) if version else stamp
+    folder = os.path.join(backups_dir(), folder_name)
+    os.makedirs(folder, exist_ok=True)
+
+    def data_progress(v):
+        progress(v * 0.7)
+
+    backup_device(ip, os.path.join(folder, BACKUP_DATA_FILE), log, data_progress, cancel)
+
+    has_firmware = False
+    if version:
+        found = fetch_release_by_tag("v%s" % version)
+        if found:
+            fw_url, fw_name = found
+            log("Guardando tambem o firmware atual (%s) para poder desfazer depois ..." % fw_name)
+            try:
+                download_github_asset(
+                    fw_url, os.path.join(folder, BACKUP_FIRMWARE_FILE), log,
+                    lambda v: progress(0.7 + v * 0.3),
+                )
+                has_firmware = True
+            except Exception as exc:  # noqa: BLE001
+                log("Nao consegui baixar o firmware atual do GitHub (%s) - "
+                    "o backup dos dados foi feito normalmente, so nao vai dar "
+                    "pra reverter o firmware automaticamente depois." % exc)
+    progress(1.0)
+
+    info = {
+        "ip": ip,
+        "device_version": version,
+        "timestamp": stamp,
+        "has_firmware": has_firmware,
+    }
+    with open(os.path.join(folder, BACKUP_INFO_FILE), "w", encoding="utf-8") as f:
+        json.dump(info, f, ensure_ascii=False, indent=2)
+    log("Backup completo em: %s" % folder)
+    return folder
+
+
+def restore_backup(ip, backup_folder, log, progress, cancel=None):
+    """O oposto de save_backup_snapshot(): regrava o firmware que estava
+    rodando na epoca do backup (se foi salvo) e depois reenvia os dados -
+    nessa ordem, porque regravar o firmware reinicia a GBS e apaga
+    qualquer estado em RAM, mas nao mexe no LittleFS."""
+    info_path = os.path.join(backup_folder, BACKUP_INFO_FILE)
+    if not os.path.isfile(info_path):
+        raise UpdateError("Pasta de backup invalida (sem %s)." % BACKUP_INFO_FILE)
+    with open(info_path, "r", encoding="utf-8") as f:
+        info = json.load(f)
+
+    firmware_path = os.path.join(backup_folder, BACKUP_FIRMWARE_FILE)
+    if info.get("has_firmware") and os.path.isfile(firmware_path):
+        log("Regravando o firmware da epoca do backup (v%s) ..." % info.get("device_version", "?"))
+        ota_upload(ip, firmware_path, log, lambda v: progress(v * 0.6), cancel)
+        _wait_online(ip, log)
+    else:
+        log("Esse backup nao tem o firmware salvo - restaurando so os dados, "
+            "por cima do firmware que estiver rodando agora na GBS.")
+
+    log("Restaurando presets e configuracoes ...")
+    restore_device(
+        ip, os.path.join(backup_folder, BACKUP_DATA_FILE), log,
+        lambda v: progress(0.6 + v * 0.4), cancel,
+    )
+    progress(1.0)
+    log("Restauracao concluida!")
 
 
 def download_github_asset(url, dest_path, log, progress):
@@ -403,8 +653,61 @@ def run_gui():
         text="Apagar tudo antes (some com presets e Wi-Fi salvos - so se der problema)",
         variable=erase_var,
     ).grid(row=3, column=0, columnspan=3, sticky="w", pady=(8, 0))
+    ttk.Label(usb_tab, text="IP da GBS (opcional):").grid(row=4, column=0, sticky="w", pady=(8, 0))
+    ttk.Entry(usb_tab, textvariable=ip_var, width=24).grid(row=4, column=1, sticky="w", padx=6, pady=(8, 0))
+    ttk.Label(
+        usb_tab,
+        text="Se a GBS ainda responder pela rede, informe o IP pra fazer\n"
+        "backup dos presets antes de gravar. Se o Wi-Fi parou de\n"
+        "funcionar (por isso o USB), pode deixar em branco.",
+        foreground="#888",
+        justify="left",
+    ).grid(row=5, column=0, columnspan=3, sticky="w", pady=(2, 0))
     usb_tab.columnconfigure(1, weight=1)
     refresh_ports()
+
+    # ---- aba Restaurar backup ----
+    restore_tab = ttk.Frame(notebook, padding=12)
+    notebook.add(restore_tab, text="  Restaurar backup  ")
+    ttk.Label(
+        restore_tab,
+        text="Desfaz uma atualizacao: regrava o firmware de quando o backup\n"
+        "foi feito (se foi salvo) e reenvia os presets e configuracoes.",
+        justify="left",
+    ).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 8))
+    ttk.Label(restore_tab, text="IP da GBS:").grid(row=1, column=0, sticky="w")
+    ttk.Entry(restore_tab, textvariable=ip_var, width=24).grid(row=1, column=1, sticky="w", padx=6)
+    ttk.Label(restore_tab, text="Backup:").grid(row=2, column=0, sticky="nw", pady=(8, 0))
+    backup_var = tk.StringVar()
+    backup_box = ttk.Combobox(restore_tab, textvariable=backup_var, width=42, state="readonly")
+    backup_box.grid(row=2, column=1, sticky="we", padx=6, pady=(8, 0))
+    backup_paths = []
+
+    def refresh_backups():
+        backups = list_backups()
+        backup_paths[:] = [folder for folder, _info in backups]
+        labels = []
+        for folder, info in backups:
+            ts = info.get("timestamp", os.path.basename(folder))
+            ver = info.get("device_version") or "?"
+            fw_note = "com firmware" if info.get("has_firmware") else "so dados"
+            labels.append("%s - v%s (%s)" % (ts, ver, fw_note))
+        backup_box["values"] = labels
+        if labels and not backup_var.get():
+            backup_box.current(0)
+        if not labels:
+            backup_var.set("")
+
+    ttk.Button(restore_tab, text="Atualizar lista", command=refresh_backups).grid(row=2, column=2, pady=(8, 0))
+
+    def open_backups_folder():
+        os.startfile(backups_dir())  # noqa: S606 - Windows-only tool, user-initiated
+
+    ttk.Button(restore_tab, text="Abrir pasta de backups", command=open_backups_folder).grid(
+        row=3, column=0, columnspan=3, sticky="w", pady=(8, 0)
+    )
+    restore_tab.columnconfigure(1, weight=1)
+    refresh_backups()
 
     # ---- barra, botoes e log ----
     progress = ttk.Progressbar(root, maximum=100)
@@ -437,10 +740,16 @@ def run_gui():
                     state["busy"] = False
                     send_btn.configure(state="normal")
                     cancel_btn.configure(state="disabled")
-                    if value:
-                        messagebox.showerror(APP_NAME, value)
+                    on_tab_changed()
+                    done_tab, error = value
+                    if error:
+                        messagebox.showerror(APP_NAME, error)
+                    elif done_tab == TAB_RESTORE:
+                        messagebox.showinfo(APP_NAME, "Restauracao concluida!")
                     else:
                         messagebox.showinfo(APP_NAME, "Tudo certo! A GBS vai reiniciar.")
+                elif kind == "refresh_backups":
+                    refresh_backups()
                 elif kind == "update_check_error":
                     state["busy"] = False
                     check_update_btn.configure(state="normal")
@@ -520,50 +829,99 @@ def run_gui():
 
     check_update_btn.configure(command=check_for_update)
 
+    TAB_OTA, TAB_USB, TAB_RESTORE = 0, 1, 2
+    BTN_LABELS = {TAB_OTA: "Enviar / Gravar", TAB_USB: "Enviar / Gravar", TAB_RESTORE: "Restaurar"}
+
+    def on_tab_changed(_event=None):
+        if not state["busy"]:
+            send_btn.configure(text=BTN_LABELS.get(notebook.index(notebook.select()), "Enviar / Gravar"))
+
+    notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
+
     def start():
         if state["busy"]:
             return
-        use_usb = notebook.index(notebook.select()) == 1
+        tab = notebook.index(notebook.select())
         ip = ip_var.get().strip()
-        path = (usb_file if use_usb else ota_file).get().strip()
-        if not use_usb and (not ip or ip.endswith(".")):
+        ip_ok = bool(ip) and not ip.endswith(".")
+        backup_folder = None
+
+        if tab == TAB_OTA and not ip_ok:
             messagebox.showwarning(APP_NAME, "Digite o IP completo da GBS.")
             return
-        if use_usb and not messagebox.askyesno(
+        if tab == TAB_USB and not ip_ok and not messagebox.askyesno(
             APP_NAME,
-            "Isso regrava o firmware pelo USB.\nFaca um backup dos seus perfis antes "
-            "(webui > Sistema > Baixar). Continuar?",
+            "Sem o IP da GBS nao da pra fazer backup dos presets antes de gravar "
+            "(normal se o Wi-Fi parou de funcionar, por isso o USB).\n\n"
+            "Continuar mesmo assim, sem backup?",
         ):
             return
+        if tab == TAB_RESTORE:
+            if not backup_paths or backup_box.current() < 0:
+                messagebox.showwarning(APP_NAME, "Escolha um backup pra restaurar.")
+                return
+            if not ip_ok:
+                messagebox.showwarning(APP_NAME, "Digite o IP completo da GBS.")
+                return
+            backup_folder = backup_paths[backup_box.current()]
+            with open(os.path.join(backup_folder, BACKUP_INFO_FILE), encoding="utf-8") as f:
+                info = json.load(f)
+            warn = (
+                "Isso vai SOBRESCREVER os presets e configuracoes atuais da GBS "
+                "com os do backup de %s" % info.get("timestamp", "?")
+            )
+            if info.get("has_firmware"):
+                warn += ", e regravar o firmware v%s por cima do atual" % info.get("device_version", "?")
+            warn += ".\n\nContinuar?"
+            if not messagebox.askyesno(APP_NAME, warn):
+                return
+
+        path = (usb_file if tab == TAB_USB else ota_file).get().strip()
         state["busy"] = True
         cancel.clear()
         progress["value"] = 0
         send_btn.configure(state="disabled")
-        # Cancelar so tem efeito de verdade no envio por Wi-Fi: a gravacao por
-        # USB (esptool) e uma chamada bloqueante que, uma vez iniciada, nao da
-        # pra interromper com seguranca. Por isso o botao fica desabilitado
-        # nessa aba, em vez de dar a falsa impressao de que cancelar funciona.
-        cancel_btn.configure(state="disabled" if use_usb else "normal")
+        # Cancelar so tem efeito de verdade no envio por Wi-Fi (OTA/backup): a
+        # gravacao por USB (esptool) e uma chamada bloqueante que, uma vez
+        # iniciada, nao da pra interromper com seguranca. Por isso o botao
+        # fica desabilitado nessa aba, em vez de dar a falsa impressao de que
+        # cancelar funciona.
+        cancel_btn.configure(state="disabled" if tab == TAB_USB else "normal")
 
         def work():
             error = ""
+            made_backup = False
             try:
-                if use_usb:
+                if tab == TAB_OTA:
+                    log("Fazendo backup dos dados da GBS antes de atualizar ...")
+                    save_backup_snapshot(ip, log, lambda v: messages.put(("progress", v * 0.3)), cancel)
+                    made_backup = True
+                    messages.put(("progress", 0))
+                    ota_upload(ip, path, log, lambda v: messages.put(("progress", v)), cancel)
+                elif tab == TAB_USB:
+                    if ip_ok:
+                        log("Fazendo backup dos dados da GBS antes de gravar ...")
+                        save_backup_snapshot(ip, log, lambda v: messages.put(("progress", v * 0.3)), cancel)
+                        made_backup = True
+                        messages.put(("progress", 0))
                     usb_flash(port_var.get(), path, erase_var.get(), log)
                 else:
-                    ota_upload(ip, path, log, lambda v: messages.put(("progress", v)), cancel)
+                    restore_backup(ip, backup_folder, log, lambda v: messages.put(("progress", v)), cancel)
             except UpdateError as exc:
                 error = str(exc)
                 log("ERRO: " + error)
             except Exception as exc:  # noqa: BLE001
                 error = "Erro inesperado: %s" % exc
                 log(error)
-            messages.put(("done", error))
+            messages.put(("done", (tab, error)))
+            if made_backup:
+                messages.put(("refresh_backups", None))
 
         threading.Thread(target=work, daemon=True).start()
 
     send_btn.configure(command=start)
     cancel_btn.configure(command=cancel.set)
+    on_tab_changed()
     append_log("Pronto. Escolha uma aba, preencha os campos e clique em Enviar / Gravar.")
     if fw_default:
         append_log("Firmware incluido: " + os.path.basename(fw_default))

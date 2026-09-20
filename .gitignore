@@ -1,3 +1,7 @@
+# GBSC Updater: local backups made before flashing (contains the user's own
+# presets/config and a copy of their firmware - never something to publish)
+tools/gbsc-updater/backups/
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
