@@ -30,6 +30,7 @@
   <li><strong>Backup automático antes de atualizar:</strong> o <a href="tools/gbsc-updater/">GBSC Updater</a> baixa sozinho seus presets e configurações (e, quando encontra no GitHub, o firmware anterior também) antes de gravar qualquer coisa. Se o backup falhar, a atualização é cancelada.</li>
   <li><strong>Restaurar com um clique:</strong> não gostou da versão nova, ou algo deu errado? A aba <strong>"Restaurar backup"</strong> regrava o firmware anterior e reenvia seus presets, sem precisar guardar nada manualmente.</li>
   <li><strong>Aviso de atualização disponível:</strong> a WebUI e o ícone piscando no visor OLED avisam quando há uma versão nova, comparando com os releases publicados aqui no GitHub.</li>
+  <li><strong>Verificação de integridade:</strong> todo <code>.bin</code>/<code>.exe</code> publicado nos <a href="https://github.com/maniaco007/Projeto-GBSC---BR-by-Maniaco/releases">releases</a> vem com um <code>SHA256SUMS.txt</code> com o checksum oficial de cada arquivo — confira antes de gravar, pra ter certeza de que baixou o arquivo genuíno e não uma versão adulterada por terceiros.</li>
 </ul>
 <p><em>Veja a seção 12 do <a href="https://github.com/maniaco007/Projeto-GBSC---BR-by-Maniaco/blob/ptbr-import/docs/DESCRITIVO_DETALHADO.md">descritivo técnico</a> para os detalhes de como isso funciona por baixo dos panos.</em></p>
 ✨ Novidades
@@ -169,3 +170,12 @@ Quando a webui encontra uma atualização, ela também avisa a GBS: um ícone de
   <li><strong>Automação para Switches SCART / Componente:</strong> Em fase de mapeamento/desenvolvimento.</li>
   <li><strong>Menu OLED:</strong> Atualmente restrito ao PT-BR (textos baseados em bitmaps pré-desenhados).</li>
   </ul>
+
+<h2>📜 Licença e Atribuição</h2>
+<p>Este projeto é distribuído sob a <a href="LICENSE"><strong>GNU General Public License v3.0 (GPLv3)</strong></a>, a mesma licença do <a href="https://github.com/ramapcsx2/gbs-control">gbs-control</a> original do qual este é um fork. Isso significa, na prática:</p>
+<ul>
+  <li>Você pode usar, estudar, modificar e redistribuir este firmware livremente — inclusive para fins comerciais.</li>
+  <li><strong>Mas</strong>: qualquer fork, modificação ou redistribuição (comercial ou não) precisa continuar sob a <strong>GPLv3</strong>, manter o <strong>código-fonte aberto e disponível</strong> a quem recebe o binário, e preservar os <strong>avisos de copyright e créditos</strong> aos autores originais e a este fork.</li>
+  <li>Não é permitido "fechar" o código, vender uma versão proprietária sem disponibilizar o fonte, ou remover a atribuição — isso violaria os termos da GPLv3 e os direitos dos autores originais.</li>
+</ul>
+<p>Veja o arquivo <a href="LICENSE">LICENSE</a> para o texto completo.</p>

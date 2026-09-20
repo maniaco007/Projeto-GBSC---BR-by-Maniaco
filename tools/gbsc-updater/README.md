@@ -18,6 +18,16 @@ Todo esse programa foi pensado em volta de uma ideia: **ninguém deveria perder 
 
 Isso é **além** do backup manual que a webui já oferece (Sistema → Cópia → Baixar) — pense nos dois como duas camadas da mesma proteção, não um substituindo o outro.
 
+## 🔒 Verificando a integridade do download
+
+Todo release publicado em [github.com/maniaco007/.../releases](https://github.com/maniaco007/Projeto-GBSC---BR-by-Maniaco/releases) vem com um `SHA256SUMS.txt` — o checksum oficial de cada `.bin`/`.exe`. Antes de rodar o programa, confira:
+
+```powershell
+Get-FileHash .\GBSC-Updater.exe -Algorithm SHA256
+```
+
+Se o valor não bater com o que está em `SHA256SUMS.txt` daquele release, **não execute o arquivo** — baixe de novo direto da página oficial de releases. Isso garante que o que você tem em mãos é exatamente o que foi publicado pelo autor, sem alteração de terceiros.
+
 ## Usando o Python (qualquer sistema)
 
 ```bash
