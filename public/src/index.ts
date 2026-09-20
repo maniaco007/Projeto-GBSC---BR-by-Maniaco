@@ -139,6 +139,7 @@ const GBSControl = {
     toggleList: null,
     toggleSwichList: null,
     updateBanner: null,
+    firmwareVersion: null,
     webSocketConnectionWarning: null,
     wifiConnect: null,
     wifiConnectButton: null,
@@ -1839,13 +1840,17 @@ const isNewerVersion = (remote: string, local: string): boolean => {
 // the banner instead of interrupting normal use of the device.
 const checkForUpdate = () => {
   const banner = GBSControl.ui.updateBanner;
-  if (!banner) {
-    return;
-  }
+  const versionLabel = GBSControl.ui.firmwareVersion;
   fetch(`/gbs/version?${+new Date()}`)
     .then((r) => r.json())
-    .then((deviceInfo: { version: string }) =>
-      fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`)
+    .then((deviceInfo: { version: string }) => {
+      if (versionLabel) {
+        versionLabel.textContent = deviceInfo.version;
+      }
+      if (!banner) {
+        return;
+      }
+      return fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`)
         .then((r) => r.json())
         .then((release: { tag_name?: string; html_url?: string }) => {
           const newer =
@@ -1862,8 +1867,8 @@ const checkForUpdate = () => {
           // Tell the device too, so it can show a small notice on the
           // OLED status bar even when nobody's looking at the webui.
           fetch(`/gbs/update-available?value=${newer ? 1 : 0}`).catch(() => {});
-        })
-    )
+        });
+    })
     .catch(() => {});
 };
 
@@ -1887,6 +1892,7 @@ const initUIElements = () => {
     toggleList: document.querySelectorAll("[gbs-toggle]"),
     toggleSwichList: document.querySelectorAll("[gbs-toggle-switch]"),
     updateBanner: document.querySelector("[gbs-update-banner]"),
+    firmwareVersion: document.querySelector("[gbs-firmware-version]"),
     wifiList: document.querySelector("[gbs-wifi-list]"),
     wifiListTable: document.querySelector(".gbs-wifi__list"),
     wifiConnect: document.querySelector(".gsb-wifi__connect"),

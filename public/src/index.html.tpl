@@ -1464,6 +1464,15 @@
         <section name="system" hidden>
           <fieldset class="gbs-fieldset">
             <legend class="gbs-fieldset__legend">
+              <div class="gbs-icon">info</div>
+              <div>Sobre</div>
+            </legend>
+            <div class="gbs-flex">
+              <div>Versão do firmware: <strong gbs-firmware-version>—</strong></div>
+            </div>
+          </fieldset>
+          <fieldset class="gbs-fieldset">
+            <legend class="gbs-fieldset__legend">
               <div class="gbs-icon">bolt</div>
               <div>Sistema</div>
             </legend>
