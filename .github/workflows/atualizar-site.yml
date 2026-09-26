@@ -1,0 +1,19 @@
+name: Atualizar site Maniaco Game Room
+on:
+  release:
+    types: [published, edited]
+  push:
+    paths:
+      - 'README.md'
+      - 'README*.md'
+  workflow_dispatch: {}
+jobs:
+  avisar-site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar o Deploy Hook do Cloudflare Pages
+        env:
+          HOOK: ${{ secrets.CF_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then echo "Secret CF_DEPLOY_HOOK não configurado."; exit 0; fi
+          curl -fsS -X POST "$HOOK" > /dev/null && echo "Site avisado."
