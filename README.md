@@ -1,11 +1,8 @@
 <div align="center">
   <h1>🎮 GBS-Control PT-BR</h1>
  <p align="center">
-  <img width="49%" alt="image" src="https://github.com/user-attachments/assets/20d8317b-a3f9-400b-9a3c-2786cef7beb5" />
-  <img width="49%" alt="image" src="https://github.com/user-attachments/assets/4200d12c-4bb3-441f-a1df-8953fcfcbd89" />
+   <img width="874" height="933" alt="image" src="https://github.com/user-attachments/assets/89ac189c-87bd-4e14-8445-046f16789827" />
 </p>
-
-
 
   <p><b>A versão brasileira e aprimorada do firmware para o upscaler queridinho da cena RetroGamer, com interface web traduzida, recheada novidades!</b></p>
   <p>Mantida por <strong>Willian Nascimento (<a href="https://www.maniacogameroom.com.br/">Maniaco Game Room</a>)</strong></p>
