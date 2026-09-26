@@ -1,7 +1,9 @@
 <div align="center">
   <h1>🎮 GBS-Control PT-BR</h1>
  <p align="center">
-   <img width="874" height="933" alt="image" src="https://github.com/user-attachments/assets/89ac189c-87bd-4e14-8445-046f16789827" />
+<img width="417" height="814" alt="chrome_5jdWndvGGM" src="https://github.com/user-attachments/assets/c52dafca-24a0-40ca-9b8a-6265b9cce6aa" />
+<img width="412" height="1008" alt="chrome_sbxg2Pkutg" src="https://github.com/user-attachments/assets/6fbd95de-1c93-4e63-a46e-8adba7cc4c13" />
+
 </p>
 
   <p><b>A versão brasileira e aprimorada do firmware para o upscaler queridinho da cena RetroGamer, com interface web traduzida, recheada novidades!</b></p>
