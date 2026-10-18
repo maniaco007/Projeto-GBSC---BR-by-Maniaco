@@ -2,7 +2,7 @@
 
 Registro completo do que foi feito nesta versão do firmware GBS-Control (chip Tvia Trueview5725, controlador ESP8266 / Wemos D1 mini), mantida por **Maniaco Game Room**. Está organizado por área, com o motivo técnico de cada decisão.
 
-**Números finais (v1.0.4):** firmware de ~903 KB (86% do limite de 1.044.464 bytes), 56 ícones de console, 51 animações de protetor de tela, 72 slots de perfil, 6 temas de cor, 2 idiomas na webui.
+**Números finais (v1.0.5):** firmware de ~903 KB (86% do limite de 1.044.464 bytes), 56 ícones de console, 51 animações de protetor de tela, 72 slots de perfil, 6 temas de cor, 2 idiomas na webui.
 
 ---
 

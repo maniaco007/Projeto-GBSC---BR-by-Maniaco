@@ -20,6 +20,9 @@
 #define OLED_MENU_WRAPPING_SPACE (OLED_MENU_WIDTH / 3)
 #define REVERSE_ROTARY_ENCODER_FOR_OLED_MENU 0 // if set 1, rotary encoder will be reversed for menu navigation
 #define REVERSE_ROTARY_ENCODER_FOR_OSD 0 // if set 1, rotary encoder will be reversed for OSD navigation
+#define OLED_ENCODER_DETENTS_PER_STEP 1 // sensibilidade: quantos "cliques" do encoder na mesma direcao para andar 1 item (1 = mais sensivel, 2 = precisa de 2 cliques)
+#define OLED_ENCODER_MIN_STEP_INTERVAL_MS 40 // ignora passos validos mais rapidos que isso (anti-ruido)
+#define OLED_ENCODER_STEP_TIMEOUT_MS 400 // cliques parciais sao esquecidos apos esse tempo sem girar
 #define OSD_TIMEOUT 8000 // OSD will disappear after OSD_TIMEOUT milliseconds without inputs
 
 // do not edit these

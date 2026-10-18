@@ -77,6 +77,8 @@ A telinha OLED (SSD1306 128x64) tem um menu navegado pelo encoder rotativo/botõ
 - **Configuração Atual:** tela de status com resolução/taxa de quadros/tipo de entrada ao vivo.
 - **Resetar/Restaurar:** reset do chip GBS, restaurar configurações de fábrica, resetar WiFi.
 
+**Navegação pelo encoder (v1.0.5):** a leitura do encoder rotativo usa um decodificador de quadratura (CLK e DATA): um passo só é aceito depois do clique completo numa direção, então repique de contato e meio clique não andam nem invertem o sentido da lista. O sentido do giro continua o mesmo. Ajustes em `OLEDMenuConfig.h`: `OLED_ENCODER_DETENTS_PER_STEP` (1 = um clique por item; 2 = dois cliques por item, menos sensível), `OLED_ENCODER_MIN_STEP_INTERVAL_MS` e `OLED_ENCODER_STEP_TIMEOUT_MS`.
+
 **Tela principal (quando ocioso):** por padrão mostra a resolução ativa, taxa de quadros e formato de entrada (RGB/YPbPr). Quando um **preset customizado** está carregado, passa a mostrar o **nome do preset** (ou um ícone genérico de controle, conforme a opção "Visor OLED: Preset Carregado" nas Preferências) no lugar da resolução. Sem preset customizado carregado, o texto de resolução continua exatamente como sempre foi.
 
 ## Protetor de Tela Animado ("GIF" por Preset)

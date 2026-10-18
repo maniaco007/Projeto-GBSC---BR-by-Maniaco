@@ -32,7 +32,7 @@
 // Bump on every release. Exposed via /gbs/version so the webui and the
 // GBSC Updater can compare against the latest GitHub release and tell the
 // user an update is available.
-#define FIRMWARE_VERSION "1.0.4"
+#define FIRMWARE_VERSION "1.0.5"
 
 
 static inline void writeBytes(uint8_t slaveRegister, uint8_t *values, uint8_t numValues);
@@ -7195,30 +7195,61 @@ void preinit()
 //}
 
 #if USE_NEW_OLED_MENU
+// Decodificador de quadratura (tabela de estados, passo completo): um passo so
+// e aceito depois da sequencia CLK/DATA completa (11 -> .. -> 11) numa direcao.
+// Ruido/repique de contato nao completa a sequencia e e descartado, e metade de
+// um clique nao troca de direcao. Substitui a leitura de DATA na borda de CLK.
+#define ENC_R_START 0x0
+#define ENC_R_CW_FINAL 0x1
+#define ENC_R_CW_BEGIN 0x2
+#define ENC_R_CW_NEXT 0x3
+#define ENC_R_CCW_BEGIN 0x4
+#define ENC_R_CCW_FINAL 0x5
+#define ENC_R_CCW_NEXT 0x6
+#define ENC_DIR_CW 0x10  // DATA cai antes de CLK: era "UP" no codigo antigo
+#define ENC_DIR_CCW 0x20
+static const uint8_t encTable[7][4] = { // em RAM (lida dentro de ISR)
+    {ENC_R_START, ENC_R_CW_BEGIN, ENC_R_CCW_BEGIN, ENC_R_START},
+    {ENC_R_CW_NEXT, ENC_R_START, ENC_R_CW_FINAL, ENC_R_START | ENC_DIR_CW},
+    {ENC_R_CW_NEXT, ENC_R_CW_BEGIN, ENC_R_START, ENC_R_START},
+    {ENC_R_CW_NEXT, ENC_R_CW_BEGIN, ENC_R_CW_FINAL, ENC_R_START},
+    {ENC_R_CCW_NEXT, ENC_R_START, ENC_R_CCW_BEGIN, ENC_R_START},
+    {ENC_R_CCW_NEXT, ENC_R_CCW_FINAL, ENC_R_START, ENC_R_START | ENC_DIR_CCW},
+    {ENC_R_CCW_NEXT, ENC_R_CCW_FINAL, ENC_R_CCW_BEGIN, ENC_R_START},
+};
 void ICACHE_RAM_ATTR isrRotaryEncoderRotateForNewMenu()
 {
-    unsigned long interruptTime = millis();
-    static unsigned long lastInterruptTime = 0;
-    static unsigned long lastNavUpdateTime = 0;
-    static OLEDMenuNav lastNav;
-    OLEDMenuNav newNav;
-    if (interruptTime - lastInterruptTime > 150) {
-        if (!digitalRead(pin_data)) {
-            newNav = REVERSE_ROTARY_ENCODER_FOR_OLED_MENU ? OLEDMenuNav::DOWN : OLEDMenuNav::UP;
-        } else {
-            newNav = REVERSE_ROTARY_ENCODER_FOR_OLED_MENU ? OLEDMenuNav::UP : OLEDMenuNav::DOWN;
-        }
-        if (newNav != lastNav && (interruptTime - lastNavUpdateTime < 120)) {
-            // ignore rapid changes to filter out mis-reads. besides, you are not supposed to rotate the encoder this fast anyway
-            oledNav = lastNav = OLEDMenuNav::IDLE;
-        }
-        else{
-            lastNav = oledNav = newNav;
-            ++rotaryIsrID;
-            lastNavUpdateTime = interruptTime;
-        }
-        lastInterruptTime = interruptTime;
+    static uint8_t encState = ENC_R_START;
+    static unsigned long lastDetentTime = 0;
+    static unsigned long lastStepTime = 0;
+    static int8_t detentCount = 0; // >0 = UP, <0 = DOWN
+    const uint8_t pinState = (digitalRead(pin_data) << 1) | digitalRead(pin_clk);
+    encState = encTable[encState & 0xf][pinState];
+    const uint8_t dir = encState & 0x30;
+    if (dir == 0) {
+        return; // sequencia ainda incompleta
     }
+    const unsigned long now = millis();
+    if (now - lastDetentTime > OLED_ENCODER_STEP_TIMEOUT_MS) {
+        detentCount = 0; // clique parcial antigo: esquece
+    }
+    lastDetentTime = now;
+    const int8_t d = (dir == ENC_DIR_CW) ? 1 : -1;
+    if ((detentCount > 0) != (d > 0)) {
+        detentCount = 0; // mudou de direcao: recomeca a contagem
+    }
+    detentCount += d;
+    if (abs(detentCount) < OLED_ENCODER_DETENTS_PER_STEP) {
+        return;
+    }
+    detentCount = 0;
+    if (now - lastStepTime < OLED_ENCODER_MIN_STEP_INTERVAL_MS) {
+        return;
+    }
+    lastStepTime = now;
+    const bool up = (d > 0);
+    oledNav = (up != (bool)REVERSE_ROTARY_ENCODER_FOR_OLED_MENU) ? OLEDMenuNav::UP : OLEDMenuNav::DOWN;
+    ++rotaryIsrID;
 }
 void ICACHE_RAM_ATTR isrRotaryEncoderPushForNewMenu()
 {
@@ -7242,7 +7273,8 @@ void setup()
     pinMode(pin_switch, INPUT_PULLUP);
 
 #if USE_NEW_OLED_MENU
-    attachInterrupt(digitalPinToInterrupt(pin_clk), isrRotaryEncoderRotateForNewMenu, FALLING);
+    attachInterrupt(digitalPinToInterrupt(pin_clk), isrRotaryEncoderRotateForNewMenu, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(pin_data), isrRotaryEncoderRotateForNewMenu, CHANGE);
     attachInterrupt(digitalPinToInterrupt(pin_switch), isrRotaryEncoderPushForNewMenu, FALLING);
     initOLEDMenu();
     initOSD();
